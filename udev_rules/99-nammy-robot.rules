@@ -1,0 +1,22 @@
+# ==============================================================================
+# NAMMY ROBOT - HARDWARE UDEV DEVICE RULES
+# Dedicated hardware permissions and deterministic symlinks for ESP32-S3 and Touch Display
+# ==============================================================================
+
+# 1. ESP32-S3 DevKitC-1 Microcontroller (Native USB OTG CDC - Espressif 303a:1001)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="1001", SYMLINK+="nammy_esp32", SYMLINK+="ttyNammyMCU", MODE="0666", GROUP="dialout"
+
+# 2. ESP32-S3 DevKitC-1 via CP2102 / CP2104 USB-UART Bridge (Silicon Labs 10c4:ea60)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", SYMLINK+="nammy_esp32_uart", SYMLINK+="nammy_esp32", MODE="0666", GROUP="dialout", RUN+="/bin/sh -c 'test -e /sys/bus/usb-serial/devices/%k/latency_timer && echo 1 > /sys/bus/usb-serial/devices/%k/latency_timer'"
+
+# 3. ESP32-S3 DevKitC-1 via WCH CH343 / CH340 USB-UART (WCH 1a86:55d4, 1a86:7523)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d4", SYMLINK+="nammy_esp32", MODE="0666", GROUP="dialout"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="nammy_esp32", MODE="0666", GROUP="dialout"
+
+# 4. FTDI Low-Latency Serial Interface (FTDI 0403:6001 / 0403:6015)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", MODE="0666", GROUP="dialout", RUN+="/bin/sh -c 'test -e /sys/bus/usb-serial/devices/%k/latency_timer && echo 1 > /sys/bus/usb-serial/devices/%k/latency_timer'"
+
+# 5. Waveshare 10.1" Capacitive Touch Display Controller (eGalax / Waveshare Touch HID)
+KERNEL=="event*", ATTRS{idVendor}=="0eef", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
+KERNEL=="event*", ATTRS{name}=="*WaveShare*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
+KERNEL=="event*", ATTRS{name}=="*Byd*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"

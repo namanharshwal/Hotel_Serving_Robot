@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nammy_power</name>
+  <version>1.0.0</version>
+  <description>24V 15Ah LiFePO4 Battery Pack and Power Subsystem Monitor for Nammy Robot</description>
+  <maintainer email="namanharshwal@gmail.com">Naman Harshwal</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>diagnostic_msgs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

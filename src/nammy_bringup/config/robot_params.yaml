@@ -1,0 +1,52 @@
+# ==============================================================================
+# NAMMY ROBOT - MASTER COMPONENT PARAMETERS
+# Components:
+#   - nammy_base   : ESP32-S3 Hardware Bridge & Differential Drive Odometry
+#   - nammy_motors : SmartElex 30S Dual Drivers & AT120 Otis DC Gear Motors
+#   - nammy_imu    : Bosch BNO055 9-DOF Absolute Orientation IMU
+#   - nammy_power  : 24V 15Ah LiFePO4 (LFP) 8S Battery Subsystem
+# ==============================================================================
+
+# 1. Base Motion & Serial Mediator (nammy_base)
+esp32_hardware_bridge:
+  ros__parameters:
+    serial_port: "/dev/nammy_esp32"
+    baud_rate: 115200
+    publish_rate: 50.0  # Hz
+
+    wheel_radius: 0.050        # 100mm Heavy Duty Disc Wheel (r = 50mm)
+    wheel_separation: 0.380    # Track width: 380mm
+
+    odom_frame_id: "odom"
+    base_frame_id: "base_footprint"
+    publish_tf: true
+
+    cmd_timeout: 0.35          # Seconds before safety stopping motors
+    simulate_hardware: false   # Auto-fallback to simulation if USB serial disconnected
+
+# 2. SmartElex 30S & AT120 Motor Manager (nammy_motors)
+motor_manager:
+  ros__parameters:
+    max_wheel_rpm: 200.0       # AT120 rated speed ~200 RPM
+    gear_ratio: 15.0           # 15:1 integrated planetary gearbox
+    continuous_current_a: 30.0 # SmartElex 30S continuous rating
+    peak_current_a: 85.0       # Peak 85A
+    deadband_compensation: 60  # Overcomes initial static friction
+
+# 3. Bosch BNO055 9-DOF IMU (nammy_imu)
+bno055_node:
+  ros__parameters:
+    i2c_bus: 7                 # Jetson 40-pin header Pin 27 (SDA) & Pin 28 (SCL)
+    i2c_address: 40            # 0x28 in decimal (0x28 = 40)
+    frame_id: "imu_link"
+    publish_rate: 50.0         # Hz
+    simulate_hardware: false
+
+# 4. 24V 15Ah LiFePO4 Power Subsystem (nammy_power)
+battery_monitor_node:
+  ros__parameters:
+    nominal_voltage: 25.6      # 8S LiFePO4 (8 * 3.2V)
+    cells_series: 8
+    capacity_ah: 15.0          # 15 Ah (384 Wh)
+    low_voltage_threshold: 21.6
+    critical_voltage_threshold: 20.0
