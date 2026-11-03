@@ -134,10 +134,10 @@ void PacketProtocol::handleAsciiCommand(const char *cmd_str) {
 }
 
 void PacketProtocol::sendTelemetry(const TelemetryPayload &telemetry) {
-    uint8_t packet[28];
+    uint8_t packet[36];
     packet[0] = PROTOCOL_HDR1;
     packet[1] = PROTOCOL_HDR2;
-    packet[2] = 22;               // Payload length
+    packet[2] = 30;               // Payload length (22 + 8 bytes sonars)
     packet[3] = MSG_TELEMETRY;
 
     memcpy(&packet[4], &telemetry.left_pos_rad, 4);
@@ -146,10 +146,14 @@ void PacketProtocol::sendTelemetry(const TelemetryPayload &telemetry) {
     memcpy(&packet[16], &telemetry.right_vel_rad_s, 4);
     memcpy(&packet[20], &telemetry.battery_voltage, 4);
     memcpy(&packet[24], &telemetry.status_flags, 2);
+    memcpy(&packet[26], &telemetry.sonar_front_mm, 2);
+    memcpy(&packet[28], &telemetry.sonar_left_mm, 2);
+    memcpy(&packet[30], &telemetry.sonar_right_mm, 2);
+    memcpy(&packet[32], &telemetry.sonar_rear_mm, 2);
 
-    uint16_t crc = calculate_crc16(&packet[2], 24);
-    packet[26] = crc & 0xFF;
-    packet[27] = (crc >> 8) & 0xFF;
+    uint16_t crc = calculate_crc16(&packet[2], 32);
+    packet[34] = crc & 0xFF;
+    packet[35] = (crc >> 8) & 0xFF;
 
-    _stream.write(packet, 28);
+    _stream.write(packet, 36);
 }

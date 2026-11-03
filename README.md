@@ -223,6 +223,59 @@ A fundamental architectural question is: **Where should the BNO055 9-DOF IMU be 
 | **Divider Node** | Node between $R_1$ and $R_2$ | **GPIO 1 (ADC1 CH0)** | Scaled: 1.81V to 2.65V (< 3.3V Limit) |
 | **Battery GND (-)** | $R_2 = 10\text{ k}\Omega$ (1% precision) to GND | **GND** | Ground Reference |
 
+#### Group 5: ESP32-S3 to TXS0108E 8-Channel Level Shifter to 4x US-100 Ultrasonic Array
+> [!IMPORTANT]
+> **US-100 Mode Selection:** The jumper on the back of all 4 US-100 sensors **MUST BE REMOVED (OPEN)** to select standard **Trigger/Echo Mode**!
+
+| Sensor Location | Function | ESP32-S3 Pin (3.3V) | TXS0108E Side A (3.3V) | TXS0108E Side B (5.0V) | US-100 Pin (5.0V) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Level Shifter Power**| Power Supply | **3V3 Pin** | **VCCA** (3.3V Input) | **VCCB** (5.0V Input from BEC)| **VCC** (All 4 sensors) |
+| **Level Shifter Enable**| Output Enable | **3V3 Pin** | **OE** (Active HIGH)  | — | — |
+| **Common Ground** | Ground Return | **GND Pin** | **GND** | **GND** | **GND** (All 4 sensors) |
+| **1. Front Sonar** | Trigger Pulse | **GPIO 8** | **A1** | **B1** | `Trig/TX` Pin |
+| **1. Front Sonar** | Echo Return   | **GPIO 9** | **A2** | **B2** | `Echo/RX` Pin |
+| **2. Left Sonar**  | Trigger Pulse | **GPIO 10**| **A3** | **B3** | `Trig/TX` Pin |
+| **2. Left Sonar**  | Echo Return   | **GPIO 11**| **A4** | **B4** | `Echo/RX` Pin |
+| **3. Right Sonar** | Trigger Pulse | **GPIO 12**| **A5** | **B5** | `Trig/TX` Pin |
+| **3. Right Sonar** | Echo Return   | **GPIO 13**| **A6** | **B6** | `Echo/RX` Pin |
+| **4. Rear Sonar**  | Trigger Pulse | **GPIO 14**| **A7** | **B7** | `Trig/TX` Pin |
+| **4. Rear Sonar**  | Echo Return   | **GPIO 21**| **A8** | **B8** | `Echo/RX` Pin |
+
+#### Group 6: YDLIDAR G2 360-Degree 2D Laser Scanner to Jetson Orin Nano
+| YDLIDAR G2 Cable / Port | Connection Destination | Protocol / Parameters |
+| :--- | :--- | :--- |
+| **USB Type-C Cable** | **Jetson USB 3.0 Port** | USB Serial via CP2102 Bridge (`/dev/ydlidar` @ 230400 bps) |
+| **Power Requirements** | 5V DC via USB Bus (or external 5V 2A BEC)| 5V ± 5%, Operating current ~450 mA |
+
+---
+
+### 4.3 Architectural Analysis: Sensor Placement (Jetson vs. ESP32-S3)
+
+#### Why 4x Ultrasonic Sensors Belong on the ESP32-S3 (and NOT directly on Jetson Linux):
+1. **Microsecond Precision vs. Linux Kernel Preemption:**
+   Ultrasonic measurement requires timing acoustic echoes with microsecond resolution ($v = 343\text{ m/s} \implies 58.2\ \mu\text{s/cm}$). On a non-real-time Linux OS like Ubuntu on the Jetson, CPU context switches, GPU load spikes, and thread preemption introduce random multi-millisecond timing delays ($1\text{ ms} = 17.1\text{ cm}$ false error!). The ESP32-S3 runs FreeRTOS with microsecond hardware timers (`micros()`) delivering sub-millimeter ranging precision.
+2. **Crosstalk-Free Sequential Round-Robin Firing:**
+   If all 4 ultrasonic sensors fire simultaneously, ultrasonic sound waves reflect off diagonal walls and trigger false echoes on adjacent sensors. The ESP32-S3 runs a deterministic 35ms round-robin scheduler (Front $\rightarrow$ Left $\rightarrow$ Right $\rightarrow$ Rear), completely eliminating acoustic interference.
+3. **Autonomous Hardware Reflex Braking (Fail-Safe Collision Prevention):**
+   If an obstacle or transparent glass barrier suddenly appears within 15 cm of the robot, the ESP32-S3 executes an **instantaneous hardware stop in < 10 ms**, directly halting the SmartElex 30S drivers even if the Jetson OS freezes, throttles, or ROS 2 navigation crashes.
+
+#### Why YDLIDAR G2 Belongs on the Jetson Orin Nano:
+* The YDLIDAR G2 produces continuous high-bandwidth 2D point cloud streams (9,000 points/second at 230,400 baud, 10 Hz 360° scans).
+* Processing these streams requires the Jetson's 6-core ARM Cortex CPU and Ampere GPU for Cartographer SLAM, Slam Toolbox, Nav2 Costmap2D obstacle layers, and voxel grid filtering.
+
+#### Why BNO055 IMU Belongs on Jetson I2C Bus 7:
+* Connecting the BNO055 directly to Jetson I2C Bus 7 (`/dev/i2c-7`, Pins 27/28) allows `robot_localization` EKF to fuse IMU angular velocities and orientations with zero serial transport latency.
+* It completely protects the ESP32-S3's 100 Hz PID motor loop from the BNO055's known ~450 $\mu$s I2C clock-stretching delays.
+
+#### Complementary LiDAR + Sonar Fusion (Glass & Low Obstacle Protection):
+| Characteristic | YDLIDAR G2 (2D Planar Laser) | 4x US-100 Ultrasonic Array | Fused Robot Behavior |
+| :--- | :--- | :--- | :--- |
+| **Operating Medium** | Infrared Light (905 nm) | Ultrasonic Sound (40 kHz) | Multi-physics sensor diversity |
+| **Clear Glass & Mirrors**| **BLIND** (Laser passes through glass) | **100% REFLECTED** (Sound bounces off glass) | Robot detects glass doors & windows |
+| **Low Obstacles (< 12 cm)**| **BLIND** (Scans horizontal plane above) | **DETECTED** (Cones cover floor to bumper) | Protects against toys, cables, step drops |
+| **Table & Chair Overhangs**| **BLIND** (Scans under tabletop) | **DETECTED** (Upper cone edge strikes table) | Prevents wedging robot under furniture |
+| **Range & Angular FOV** | 360° continuous, 0.12m – 12.0m | 15° cone per sensor, 0.02m – 4.5m | Sonars fill blind spots; LiDAR maps room |
+
 ---
 
 ## 5. Mathematical Kinematics & Sub-Millimeter Odometry
@@ -276,7 +329,9 @@ nammy_ws/src/
 ├── nammy_display/       # [5] 10.1" (1280x800) capacitive touch HMI dashboard app
 ├── nammy_teleop/        # [6] Keyboard and gamepad teleoperation velocity driver
 ├── nammy_description/   # [7] 3D URDF/Xacro model, joints, sensor links & RViz2 visuals
-└── nammy_bringup/       # [8] Master umbrella orchestrator (robot.launch.py, params.yaml)
+├── nammy_bringup/       # [8] Master umbrella orchestrator (robot.launch.py, params.yaml)
+├── nammy_sonar/         # [9] 4x US-100 Sonar Array & Costmap PointCloud2 Fusion
+└── nammy_lidar/         # [10] YDLIDAR G2 360-Degree Laser Scanner Bringup & Sim Fallback
 ```
 
 ### Detailed Package Responsibilities:
@@ -284,7 +339,7 @@ nammy_ws/src/
 1. **[`nammy_base`](src/nammy_base):**
    * Node: `esp32_hardware_bridge`
    * Subscribes: `/cmd_vel` (`geometry_msgs/msg/Twist`)
-   * Publishes: `/odom` (`nav_msgs/msg/Odometry`), `/joint_states` (`sensor_msgs/msg/JointState`), `/nammy/battery_state` (`sensor_msgs/msg/BatteryState`)
+   * Publishes: `/odom` (`nav_msgs/msg/Odometry`), `/joint_states` (`sensor_msgs/msg/JointState`), `/nammy/battery_state` (`sensor_msgs/msg/BatteryState`), `/sonar/front`, `/sonar/left`, `/sonar/right`, `/sonar/rear` (`sensor_msgs/msg/Range`)
    * Broadcasts TF: `odom -> base_footprint`
    * Features: Automatic USB hotplug re-connection and simulation fallback.
 
@@ -316,12 +371,24 @@ nammy_ws/src/
 
 7. **[`nammy_description`](src/nammy_description):**
    * URDF/Xacro: [`urdf/nammy_robot.urdf.xacro`](src/nammy_description/urdf/nammy_robot.urdf.xacro)
-   * Elements: 100mm HD Disc wheels, 10.1" tilted touch console, 24V LiFePO4 pack, SmartElex 30S dual drivers, ESP32-S3, LiDAR link, and BNO055 `imu_link`.
+   * Elements: 100mm HD Disc wheels, 10.1" tilted touch console, 24V LiFePO4 pack, SmartElex 30S dual drivers, ESP32-S3, YDLIDAR G2 optical assembly, BNO055 `imu_link`, and 4x US-100 sonar sensor links (`front_sonar_link`, `left_sonar_link`, `right_sonar_link`, `rear_sonar_link`).
 
 8. **[`nammy_bringup`](src/nammy_bringup):**
    * Master Launch: [`launch/robot.launch.py`](src/nammy_bringup/launch/robot.launch.py)
    * Dashboard Launch: [`launch/dashboard.launch.py`](src/nammy_bringup/launch/dashboard.launch.py)
    * Parameters: Centralized [`config/robot_params.yaml`](src/nammy_bringup/config/robot_params.yaml).
+
+9. **[`nammy_sonar`](src/nammy_sonar):**
+   * Node: `sonar_fusion_node`
+   * Subscribes: `/sonar/front`, `/sonar/left`, `/sonar/right`, `/sonar/rear` (`sensor_msgs/msg/Range`)
+   * Publishes: `/sonar/obstacle_cloud` (`sensor_msgs/msg/PointCloud2`), `/nammy/sonar_safety_stop` (`std_msgs/msg/Bool`)
+   * Features: Projects 15-degree ultrasonic detection cones into 3D Cartesian coordinates in `base_link` frame for Nav2 Costmap2D integration, detecting glass, table edges, and floor drops.
+
+10. **[`nammy_lidar`](src/nammy_lidar):**
+    * Driver: System `ydlidar_ros2_driver_node` (Config: [`config/ydlidar_g2_params.yaml`](src/nammy_lidar/config/ydlidar_g2_params.yaml))
+    * Node: `lidar_sim_fallback` (Runs 360° synthetic scan when hardware is unplugged)
+    * Publishes: `/scan` (`sensor_msgs/msg/LaserScan` @ 10 Hz, 0.12m – 12.0m range)
+    * Port: `/dev/ydlidar` (Baud: 230400 bps)
 
 ---
 

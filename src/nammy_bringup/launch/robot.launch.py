@@ -2,24 +2,30 @@
 """
 Master Robot Bringup Launch File for Nammy Robot Platform.
 Coordinates and launches all component packages:
-  - nammy_description (URDF, Robot State Publisher)
-  - nammy_base        (ESP32-S3 Hardware Bridge & Odometry)
+  - nammy_description (URDF, Robot State Publisher, 4x Sonars, YDLIDAR G2)
+  - nammy_base        (ESP32-S3 Hardware Bridge, Odometry & Range Publisher)
   - nammy_motors      (SmartElex 30S & AT120 Motor Manager)
   - nammy_imu         (Bosch BNO055 9-DOF IMU Driver)
   - nammy_power       (24V LiFePO4 Battery Monitor & Safety Alerts)
+  - nammy_sonar       (4-Channel US-100 Sonar Fusion & PointCloud2 Costmap)
+  - nammy_lidar       (YDLIDAR G2 360-Degree 2D Laser Scanner)
 """
 
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 import xacro
 
 def generate_launch_description():
     desc_pkg = get_package_share_directory('nammy_description')
     bringup_pkg = get_package_share_directory('nammy_bringup')
+    lidar_pkg = get_package_share_directory('nammy_lidar')
+    sonar_pkg = get_package_share_directory('nammy_sonar')
 
     # Process URDF Xacro
     xacro_file = os.path.join(desc_pkg, 'urdf', 'nammy_robot.urdf.xacro')
@@ -45,6 +51,24 @@ def generate_launch_description():
         'i2c_bus',
         default_value='7',
         description='I2C bus number for BNO055 on Jetson 40-pin header'
+    )
+
+    lidar_arg = DeclareLaunchArgument(
+        'launch_lidar',
+        default_value='true',
+        description='Launch YDLIDAR G2 driver node'
+    )
+
+    sim_lidar_arg = DeclareLaunchArgument(
+        'simulate_lidar',
+        default_value='false',
+        description='Run simulated laser scan if hardware is not plugged in'
+    )
+
+    sonar_arg = DeclareLaunchArgument(
+        'launch_sonar',
+        default_value='true',
+        description='Launch 4x US-100 Sonar Fusion & Costmap PointCloud2'
     )
 
     # 1. Robot State Publisher (3D URDF)
@@ -104,13 +128,39 @@ def generate_launch_description():
         parameters=[params_file]
     )
 
+    # 6. 4x US-100 Sonar Fusion Node (nammy_sonar)
+    sonar_node = Node(
+        package='nammy_sonar',
+        executable='sonar_fusion_node',
+        name='sonar_fusion_node',
+        output='screen',
+        parameters=[params_file],
+        condition=IfCondition(LaunchConfiguration('launch_sonar'))
+    )
+
+    # 7. YDLIDAR G2 Launch (nammy_lidar)
+    lidar_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(lidar_pkg, 'launch', 'ydlidar.launch.py')
+        ),
+        launch_arguments={
+            'simulate_lidar': LaunchConfiguration('simulate_lidar')
+        }.items(),
+        condition=IfCondition(LaunchConfiguration('launch_lidar'))
+    )
+
     return LaunchDescription([
         sim_arg,
         port_arg,
         imu_bus_arg,
+        lidar_arg,
+        sim_lidar_arg,
+        sonar_arg,
         robot_state_pub_node,
         base_bridge_node,
         motor_manager_node,
         imu_node,
-        power_node
+        power_node,
+        sonar_node,
+        lidar_launch
     ])

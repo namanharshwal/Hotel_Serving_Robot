@@ -50,3 +50,11 @@ battery_monitor_node:
     capacity_ah: 15.0          # 15 Ah (384 Wh)
     low_voltage_threshold: 21.6
     critical_voltage_threshold: 20.0
+
+# 5. 4x US-100 Ultrasonic Array & Costmap Fusion (nammy_sonar)
+sonar_fusion_node:
+  ros__parameters:
+    base_frame: "base_link"
+    critical_stop_distance: 0.15   # 15 cm
+    max_detection_range: 3.50      # 3.5 m
+    points_per_cone: 5

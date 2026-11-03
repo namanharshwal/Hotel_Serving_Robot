@@ -27,6 +27,7 @@ def print_menu():
     print("  [4] Open-Loop Direct PWM Calibration (-1023 to +1023)")
     print("  [5] Live PID Gain Tuning (Update Kp, Ki, Kd, Kff)")
     print("  [6] Emergency Stop (Immediate Motor Cutoff)")
+    print("  [7] Live Sonar Range Stream (Front, Left, Right, Rear & Reflex Safety)")
     print("  [q] Quit")
     print("=" * 65)
 
@@ -133,6 +134,32 @@ def main():
                 # E-Stop
                 ser.write(pack_estop())
                 print("[✓] Emergency Stop Sent to ESP32-S3.")
+
+            elif choice == '7':
+                # Live Sonar Monitoring
+                print("\nStreaming 4-channel US-100 Ultrasonic distances (Press Ctrl+C to stop)...")
+                try:
+                    while True:
+                        ser.write(pack_heartbeat())
+                        if ser.in_waiting:
+                            chunk = ser.read(ser.in_waiting)
+                            parser.feed(chunk)
+                            while True:
+                                pkt = parser.parse()
+                                if pkt is None:
+                                    break
+                                msg_type, payload = pkt
+                                if msg_type == MSG_TELEMETRY:
+                                    t = unpack_telemetry(payload)
+                                    if t:
+                                        front_alert = " [CRITICAL STOP]" if (t.status_flags & 0x08) else ""
+                                        rear_alert  = " [CRITICAL STOP]" if (t.status_flags & 0x10) else ""
+                                        print(f"\r[SONARS] Front: {t.sonar_front_m:4.2f}m{front_alert:16s} | "
+                                              f"Left: {t.sonar_left_m:4.2f}m | Right: {t.sonar_right_m:4.2f}m | "
+                                              f"Rear: {t.sonar_rear_m:4.2f}m{rear_alert:16s} ", end='', flush=True)
+                        time.sleep(0.03)
+                except KeyboardInterrupt:
+                    print("\n[Stopped]")
 
             elif choice.lower() == 'q':
                 break

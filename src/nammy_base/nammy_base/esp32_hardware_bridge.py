@@ -17,7 +17,7 @@ from rclpy.node import Node
 from rclpy.time import Time
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState, BatteryState
+from sensor_msgs.msg import JointState, BatteryState, Range
 from tf2_ros import TransformBroadcaster
 
 from nammy_base.packet_protocol import (
@@ -79,13 +79,21 @@ class ESP32HardwareBridge(Node):
         self.prev_left_pos = None
         self.prev_right_pos = None
         
-        # Battery state
+        # Battery state & Ultrasonic Ranges
         self.battery_voltage = 26.4  # Nominal 24V LiFePO4 (8S)
+        self.sonar_front_m = 4.50
+        self.sonar_left_m = 4.50
+        self.sonar_right_m = 4.50
+        self.sonar_rear_m = 4.50
 
         # Publishers
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.joint_pub = self.create_publisher(JointState, 'joint_states', 10)
         self.battery_pub = self.create_publisher(BatteryState, 'nammy/battery_state', 10)
+        self.sonar_front_pub = self.create_publisher(Range, 'sonar/front', 10)
+        self.sonar_left_pub = self.create_publisher(Range, 'sonar/left', 10)
+        self.sonar_right_pub = self.create_publisher(Range, 'sonar/right', 10)
+        self.sonar_rear_pub = self.create_publisher(Range, 'sonar/rear', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
 
         # Subscribers
@@ -266,6 +274,28 @@ class ESP32HardwareBridge(Node):
                     self.left_vel = telemetry.left_vel_rad_s
                     self.right_vel = telemetry.right_vel_rad_s
                     self.battery_voltage = telemetry.battery_volts
+                    self.sonar_front_m = telemetry.sonar_front_m
+                    self.sonar_left_m = telemetry.sonar_left_m
+                    self.sonar_right_m = telemetry.sonar_right_m
+                    self.sonar_rear_m = telemetry.sonar_rear_m
+
+                    now_msg = self.get_clock().now().to_msg()
+                    self.publish_sonar_range(self.sonar_front_pub, 'front_sonar_link', telemetry.sonar_front_m, now_msg)
+                    self.publish_sonar_range(self.sonar_left_pub, 'left_sonar_link', telemetry.sonar_left_m, now_msg)
+                    self.publish_sonar_range(self.sonar_right_pub, 'right_sonar_link', telemetry.sonar_right_m, now_msg)
+                    self.publish_sonar_range(self.sonar_rear_pub, 'rear_sonar_link', telemetry.sonar_rear_m, now_msg)
+
+    def publish_sonar_range(self, publisher, frame_id: str, distance_m: float, timestamp):
+        """Publish standard ROS 2 sensor_msgs/Range message for Nav2 costmaps."""
+        msg = Range()
+        msg.header.stamp = timestamp
+        msg.header.frame_id = frame_id
+        msg.radiation_type = Range.ULTRASOUND
+        msg.field_of_view = 0.2618  # 15 degrees cone for US-100
+        msg.min_range = 0.02        # 2 cm
+        msg.max_range = 4.50        # 4.5 meters
+        msg.range = float(distance_m)
+        publisher.publish(msg)
 
     def handle_disconnect(self, reason: str):
         """Handle USB unplug / serial disconnection without crashing."""

@@ -33,6 +33,10 @@ struct TelemetryPayload {
     float right_vel_rad_s;
     float battery_voltage;
     uint16_t status_flags;
+    uint16_t sonar_front_mm;
+    uint16_t sonar_left_mm;
+    uint16_t sonar_right_mm;
+    uint16_t sonar_rear_mm;
 };
 
 struct PidTunePayload {

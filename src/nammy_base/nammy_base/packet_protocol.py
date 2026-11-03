@@ -25,6 +25,10 @@ class TelemetryData(NamedTuple):
     right_vel_rad_s: float
     battery_volts: float
     status_flags: int
+    sonar_front_m: float
+    sonar_left_m: float
+    sonar_right_m: float
+    sonar_rear_m: float
 
 def crc16_ccitt(data: bytes) -> int:
     """Calculate 16-bit CRC-CCITT (polynomial 0x1021, init 0xFFFF)."""
@@ -116,8 +120,14 @@ class PacketParser:
         return None
 
 def unpack_telemetry(payload: bytes) -> Optional[TelemetryData]:
-    """Unpack telemetry payload (22 bytes: 5 floats + 1 uint16)."""
-    if len(payload) != 22:
-        return None
-    left_pos, right_pos, left_vel, right_vel, batt_volts, flags = struct.unpack('<fffffH', payload)
-    return TelemetryData(left_pos, right_pos, left_vel, right_vel, batt_volts, flags)
+    """Unpack telemetry payload (30 bytes: 5 floats + 1 uint16 + 4 uint16 sonars in mm)."""
+    if len(payload) == 30:
+        left_pos, right_pos, left_vel, right_vel, batt_volts, flags, sf_mm, sl_mm, sr_mm, srear_mm = struct.unpack('<fffffHHHHH', payload)
+        return TelemetryData(
+            left_pos, right_pos, left_vel, right_vel, batt_volts, flags,
+            sf_mm / 1000.0, sl_mm / 1000.0, sr_mm / 1000.0, srear_mm / 1000.0
+        )
+    elif len(payload) == 22:
+        left_pos, right_pos, left_vel, right_vel, batt_volts, flags = struct.unpack('<fffffH', payload)
+        return TelemetryData(left_pos, right_pos, left_vel, right_vel, batt_volts, flags, 0.0, 0.0, 0.0, 0.0)
+    return None

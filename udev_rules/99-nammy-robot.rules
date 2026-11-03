@@ -20,3 +20,7 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", MODE="0666", GROUP="dialout", RUN+="/
 KERNEL=="event*", ATTRS{idVendor}=="0eef", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
 KERNEL=="event*", ATTRS{name}=="*WaveShare*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
 KERNEL=="event*", ATTRS{name}=="*Byd*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
+
+# 6. YDLIDAR G2 360-Degree 2D Laser Scanner (Silicon Labs CP2102 / CH340)
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="0666", GROUP:="dialout", SYMLINK+="ydlidar"
+KERNEL=="ttyUSB*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", MODE:="0666", GROUP:="dialout", SYMLINK+="ydlidar"
