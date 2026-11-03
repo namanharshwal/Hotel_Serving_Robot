@@ -27,7 +27,9 @@ The platform employs a **two-tier compute and control architecture**:
 |  +---------------------------------------------------------------------------------------------------+  |
 |  | [HIGH-LEVEL COMPUTE SBC] NVIDIA Jetson Orin Nano Super Developer Kit                              |  |
 |  |   - nammy_bringup     : Master orchestrator & centralized parameters (robot.launch.py)            |  |
-|  |   - nammy_base        : USB Serial Mediator Hardware Bridge, Odometry, TF Broadcaster             |  |
+|  |   - nammy_base        : USB Serial Hardware Bridge, Odometry, TF, Sonar Ranges (/sonar/front)     |  |
+|  |   - nammy_sonar       : 4-Channel US-100 Sonar Fusion & PointCloud2 Costmap (/sonar/obstacle_cloud)|  |
+|  |   - nammy_lidar       : YDLIDAR G2 360° 2D Laser Scanner Driver (/scan @ 10 Hz, 12m Range)        |  |
 |  |   - nammy_motors      : SmartElex 30S & AT120 Motor Manager, Limits, & Health Diagnostics         |  |
 |  |   - nammy_imu         : Bosch BNO055 9-DOF IMU Driver (I2C Bus 7 /dev/i2c-7 @ 50 Hz)               |  |
 |  |   - nammy_power       : 24V LiFePO4 Battery Monitor, SOC Curve, Diagnostic Alerts                 |  |
@@ -35,25 +37,29 @@ The platform employs a **two-tier compute and control architecture**:
 |  |   - nammy_teleop      : Keyboard & Gamepad Velocity Control Engine                                |  |
 |  |   - nammy_description : 3D URDF/Xacro Kinematics Model, Joint State Publisher, RViz2 Visuals    |  |
 |  |   - Isolated Python Virtual Environment (.venv) with Zero Global or hover_ws Interference         |  |
-|  +---------------------------------------------------|-----------------------------------------------+  |
-|                                                      | Shielded USB Type-C Serial Link                  |
-|                                                      | 115200 bps Framed Binary CRC-16 Protocol         |
-|  +---------------------------------------------------v-----------------------------------------------+  |
-|  | [REAL-TIME MOTION MEDIATOR] ESP32-S3-DevKitC-1 Wireless Module (Dual-Core 240 MHz)               |  |
-|  |   - 100 Hz Dual Closed-Loop Velocity PID + Feedforward Loops                                       |  |
-|  |   - 20 kHz Silent Ultrasonic PWM via Hardware LEDC Timers (0–1023 Duty)                            |  |
-|  |   - 4x Optical Quadrature Decoding (6,000 ticks/wheel rev -> 0.05236 mm/tick resolution)          |  |
-|  |   - 300 ms Hardware Watchdog (Auto-Brakes Motors on Comm Loss)                                     |  |
-|  |   - 12-Bit ADC Battery Voltage Sampling with Exponential Moving Average Filter                      |  |
-|  +-------------------|-------------------------------------------------------|-----------------------+  |
-|                      | 20 kHz PWM & DIR Logic                                | Incremental Enc A/B   |
-|  +-------------------v-------------------+       +---------------------------v-----------------------+  |
-|  | 2x SmartElex 30S Motor Drivers (30A)  |       | 2x AT120 Otis PAX DC Gear Motors (24V DC)          |  |
-|  |   - Left Driver : GPIO 4 (PWM), 5(DIR)|       |   - 15:1 Integrated Planetary Gearbox                 |  |
-|  |   - Right Driver: GPIO 6 (PWM), 7(DIR)|       |   - 100-Pulse/Rev Optical Shaft Encoders              |  |
-|  +-------------------|-------------------+       +---------------------------|-----------------------+  |
-|                      +------------------------->-----------------------------+                          |
-|                                                                                                         |
+|  +-------------------|---------------------------------------------------|---------------------------+  |
+|                      | Shielded USB Type-C (115200 bps CRC-16)           | Direct USB 3.0 (230400 bps)
+|  +-------------------v-----------------------------------------------+  +---------------------------+  |
+|  | [REAL-TIME MOTION & SAFETY MEDIATOR] ESP32-S3-DevKitC-1 (240 MHz) |  | [YDLIDAR G2 360° LASER]   |  |
+|  |   - 100 Hz Dual Closed-Loop Velocity PID + Feedforward Loops      |  | 2D Planar Navigation Scan |  |
+|  |   - 20 kHz Silent Ultrasonic PWM via LEDC Timers (0–1023 Duty)    |  +---------------------------+  |
+|  |   - 4x Optical Quadrature Decoding (6,000 ticks/wheel rev)        |                                 |
+|  |   - 35 ms Non-Blocking Round-Robin US-100 Ultrasonic Scheduler    |                                 |
+|  |   - Autonomous Reflex Braking (< 10 ms Emergency Stop on Obstacle)|                                 |
+|  |   - 300 ms Hardware Watchdog (Auto-Brakes Motors on Comm Loss)    |                                 |
+|  |   - 12-Bit ADC 24V Battery Sampling with EMA Filter               |                                 |
+|  +---|-------------------|---------------------------------------|---+                                 |
+|      | 20 kHz PWM & DIR  | Quadrature A/B                        | 3.3V Logic Trigger/Echo (8 Ch)      |
+|  +---v---------------+  +---v---------------+       +------------v-----------------------------+       |
+|  | 2x SmartElex 30S  |  | 2x AT120 Motors   |       | TXS0108E 8-Channel High Speed Shifter    |       |
+|  | Single Channel 30A|  | 24V DC 15:1 Ratio |       | Side A: 3.3V (ESP32) <-> Side B: 5V      |       |
+|  +-------------------+  +-------------------+       +---------------------------|--------------+       |
+|                                                                                 | 5V Trigger & Echo    |
+|                                                     +---------------------------v--------------+       |
+|                                                     | 4x US-100 Ultrasonic Array (40 kHz Sound)|       |
+|                                                     | Front, Left, Right, Rear Bumper Levels   |       |
+|                                                     | Detects Glass, Floor Obstacles, Steps    |       |
+|                                                     +------------------------------------------+       |
 |  +---------------------------------------------------------------------------------------------------+  |
 |  | [POWER & HMI SUBSYSTEMS]                                                                          |  |
 |  |   - Battery: 24V ~15Ah LiFePO4 (LFP) 8S Pack (380Wh, 32140 Cells, 20A TDT BMS)                    |  |
@@ -76,6 +82,9 @@ The platform employs a **two-tier compute and control architecture**:
 | **Drive Wheels (2x)** | **Heavy Duty HD Disc Wheel 100mm Diameter**<br>• Diameter: 100 mm ($r = 0.050\text{ m}$), Width: 35 mm<br>• Tread: High-traction, shock-absorbing polyurethane solid rubber<br>• Core: Reinforced HD disc hub with standard motor shaft adapter | [Robu.in 100mm HD Disc Wheel](https://robu.in/product/heavy-dutyhd-disc-wheel-100mm-dia-1pcgrey-color) |
 | **Microcontroller** | **ESP32-S3-DevKitC-1 Wireless Development Board**<br>• MCU: ESP32-S3 (Xtensa 32-bit Dual-Core LX7 @ 240 MHz, 512KB SRAM, 8MB Flash)<br>• Interfaces: Dual Type-C USB (UART + Native USB OTG CDC), Hardware LEDC PWM, Pulse Counter<br>• Wireless: 2.4 GHz Wi-Fi + Bluetooth 5 (LE) | [Probots ESP32-S3 DevKitC-1](https://probots.co.in/esp32-s3-devkitc-1-development-board-wireless-module-wifi-bluetooth.html) |
 | **DC Gear Motors (2x)** | **AT120 Otis PAX DC Gear Motors with Encoder (KM949299)**<br>• Voltage: 24V DC Rated<br>• Gear Transmission: 15:1 Integrated Planetary Reduction<br>• Speed: ~200 RPM rated output ($\approx 20.94\text{ rad/s}$)<br>• Torque: ~1.05–1.08 N·m continuous, heavy peak torque<br>• Feedback: Dual-channel optical incremental encoder (100 pulses/rev) | [Kone / Otis AT120 Motor (KM949299)](https://share.google/D32h0ckD8dXbc6RLv) |
+| **Ultrasonic Sensors (4x)**| **US-100 Ultrasonic Distance Measuring Sensor Module**<br>• Operating Voltage: 2.4V to 5.5V DC (Configured at 5.0V)<br>• Range: 2 cm to 450 cm (4.5m)<br>• Integrated Temperature Compensation for speed-of-sound accuracy<br>• Operating Mode: Jumper REMOVED for Trigger/Echo pulse mode | [Robu.in US-100 Ultrasonic Sensor](https://robu.in/product/us-100-ultrasonic-sensor-distance-measuring-module-temperature-compensation/) |
+| **Logic Level Shifter**| **TXS0108E High Speed Full Duplex 8-Channel Logic Level Converter**<br>• Channels: 8 Bidirectional auto-direction sensing channels<br>• Voltage Rails: Port A = 1.2V–3.6V (3.3V ESP32), Port B = 1.65V–5.5V (5.0V US-100)<br>• Speed: Up to 60 Mbps push-pull / 2 Mbps open-drain | [ElectroPi TXS0108E Level Converter](https://share.google/e0HAv8aUK5kFdkajV) |
+| **2D Laser Scanner** | **YDLIDAR G2 360-Degree 2D LiDAR**<br>• Scan Frequency: 5–12 Hz (Configured at 10 Hz)<br>• Sample Rate: 5,000–9,000 samples/sec (9 kHz)<br>• Range: 0.12m to 12.0m, Angular Resolution: 0.4°–0.6°<br>• Interface: USB Type-C (Silicon Labs CP2102 @ 230,400 baud) | Standard YDLIDAR G2 Scanner |
 | **9-DOF IMU Sensor** | **Bosch BNO055 9-Axis Absolute Orientation Sensor**<br>• Output: Triaxial 14-bit Accelerometer, 16-bit Gyroscope, Geomagnetic Field Sensor<br>• Onboard Fusion: BSX3.0 FusionLib Cortex-M0 MCU outputting absolute Quaternions<br>• Interface: I2C (Address: 0x28 or 0x29) with Clock Stretching | Standard Bosch BNO055 breakout |
 
 ---
@@ -420,21 +429,33 @@ Connect the ESP32-S3 to the Jetson via USB and run the flasher:
 ```bash
 /home/comppoint/Documents/nammy_ws/scripts/flash_esp32.sh
 ```
-*(PlatformIO in `.venv` will automatically compile and flash the firmware).*
+*(Or compile and flash directly using PlatformIO from the virtual environment):*
+```bash
+cd /home/comppoint/Documents/nammy_ws/firmware/esp32s3_smartelex_driver
+pio run -t upload --upload-port /dev/ttyACM0
+```
 
 ### Step 5: Run Pre-Flight Hardware Diagnostics
-Verify serial communication, encoder counts, closed-loop speed, and 24V battery ADC:
+Verify serial communication, encoder counts, closed-loop speed, 24V battery ADC, and the 4 ultrasonic sonars without starting ROS 2:
 ```bash
-python3 /home/comppoint/Documents/nammy_ws/scripts/esp32_mediator_test.py
+python3 /home/comppoint/Documents/nammy_ws/scripts/esp32_mediator_test.py /dev/ttyACM0
 ```
+Available Interactive Menu Options:
+* **`[1]` Live Telemetry:** Monitor raw encoder counts, angular velocities, 24V battery voltage, and status flags.
+* **`[2]` Velocity Step Test:** Commands wheels forward at 2.0 rad/s under closed-loop PID control.
+* **`[3]` Differential Turn Test:** Spins robot in place to verify opposing wheel rotation.
+* **`[4]` Open-Loop PWM Calibration:** Direct duty cycle control (-1023 to +1023) to tune motor deadband.
+* **`[5]` Live PID Gain Tuning:** Update $K_p$, $K_i$, $K_d$, and $K_{ff}$ on the fly.
+* **`[6]` Emergency Stop:** Instantly shuts down PWM to zero.
+* **`[7]` Live Sonar Range Stream:** Real-time distances for Front, Left, Right, and Rear US-100 sonars + reflex emergency stop flags.
 
 ### Step 6: Launch the Complete Robot Stack
 In your primary terminal:
 ```bash
 source /home/comppoint/Documents/nammy_ws/activate_nammy.sh
-ros2 launch nammy_bringup robot.launch.py
+ros2 launch nammy_bringup robot.launch.py serial_port:=/dev/ttyACM0 simulate_lidar:=true
 ```
-*(To test without physical hardware connected, append `simulate_hardware:=true`).*
+*(When your physical YDLIDAR G2 is plugged in via USB, remove `simulate_lidar:=true` to activate the real hardware driver).*
 
 ### Step 7: Launch the 10.1" Touch HMI Dashboard
 On the robot's physical display:
