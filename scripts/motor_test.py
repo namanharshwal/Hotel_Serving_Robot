@@ -9,8 +9,8 @@ import os
 import time
 import serial
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'nammy_controller'))
-from nammy_controller.packet_protocol import pack_cmd_vel, pack_estop
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'nammy_base'))
+from nammy_base.packet_protocol import pack_cmd_vel, pack_estop
 
 def main():
     print("======================================================================")

@@ -10,9 +10,9 @@ import time
 import serial
 import serial.tools.list_ports
 
-# Add nammy_controller to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'nammy_controller'))
-from nammy_controller.packet_protocol import (
+# Add nammy_base to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'nammy_base'))
+from nammy_base.packet_protocol import (
     pack_cmd_vel, pack_heartbeat, PacketParser, unpack_telemetry, MSG_TELEMETRY
 )
 

@@ -1,0 +1,29 @@
+# ==============================================================================
+# HOTEL SERVING ROBOT (NAMMY ROBOT) - PYTHON DEPENDENCY REQUIREMENTS
+# Maintainer: Naman Harshwal (COMP-POINT PVT. LTD. India)
+# Target Environment: ROS 2 Humble Hawksbill on JetPack 6.x / Ubuntu 22.04 LTS
+# ==============================================================================
+
+# Hardware Communication & Serial Protocols
+pyserial>=3.5
+
+# High-Performance Math & Coordinate Transformations
+numpy>=1.22.0
+transforms3d>=0.4.1
+
+# Jetson 40-Pin GPIO & I2C Bus Driver for Bosch BNO055 9-DOF IMU
+smbus2>=0.4.2
+Adafruit-Blinka>=8.67.0
+adafruit-circuitpython-bno055>=5.4.20
+Adafruit-PlatformDetect>=3.84.1
+
+# Teleoperation & Human-Machine Interface (Touchscreen Dashboard)
+evdev>=1.6.0
+pygame>=2.5.0
+
+# Firmware Compilation & Embedded Flashing (ESP32-S3 Dual-Core Mediator)
+platformio>=6.1.0
+esptool>=4.8.0
+
+# Configuration & Data Serialization
+PyYAML>=6.0
