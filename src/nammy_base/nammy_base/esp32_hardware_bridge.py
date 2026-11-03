@@ -147,9 +147,20 @@ class ESP32HardwareBridge(Node):
                 self.sim_mode = True
 
     def cmd_vel_callback(self, msg: Twist):
-        """Receive velocity setpoint and update targets."""
-        self.target_v = msg.linear.x
-        self.target_w = msg.angular.z
+        """Receive velocity setpoint and update targets with security bounds checking."""
+        vx = msg.linear.x
+        wz = msg.angular.z
+
+        # Security & Sanity Input Validation: Reject NaN or Infinite values
+        if math.isnan(vx) or math.isinf(vx) or math.isnan(wz) or math.isinf(wz):
+            self.get_logger().error("SECURITY ALERT: Malformed cmd_vel received (NaN or Inf)! Halting robot.")
+            self.target_v = 0.0
+            self.target_w = 0.0
+            return
+
+        # Defensive bounds clamping to physical platform limits
+        self.target_v = max(min(vx, self.max_v), -self.max_v)
+        self.target_w = max(min(wz, self.max_w), -self.max_w)
         self.last_cmd_time = self.get_clock().now()
 
     def control_loop(self):

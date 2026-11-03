@@ -1,6 +1,7 @@
 # ==============================================================================
 # HOTEL SERVING ROBOT (NAMMY ROBOT) - PYTHON DEPENDENCY REQUIREMENTS
-# Maintainer: Naman Harshwal (COMP-POINT PVT. LTD. India)
+# Author & Copyright Holder: Naman Harshwal (namanharshwal@gmail.com)
+# License: Apache License, Version 2.0
 # Target Environment: ROS 2 Humble Hawksbill on JetPack 6.x / Ubuntu 22.04 LTS
 # ==============================================================================
 

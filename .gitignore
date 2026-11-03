@@ -1,6 +1,7 @@
 # ==============================================================================
 # HOTEL SERVING ROBOT (NAMMY ROBOT) - GITIGNORE SPECIFICATION
-# Maintainer: Naman Harshwal (COMP-POINT PVT. LTD. India)
+# Author & Copyright: Naman Harshwal (namanharshwal@gmail.com)
+# License: Apache License, Version 2.0
 # ==============================================================================
 
 # Python Virtual Environments & Bytecode Caches
@@ -41,7 +42,22 @@ firmware/*/.vscode/
 .vscode/
 .idea/
 
-# Editor / OS temporary files
+# Security, Credentials, and Cryptographic Keys
+*.key
+*.pem
+*.crt
+*.cert
+*.p12
+*.pfx
+*.token
+*.secret
+credentials*
+.env
+.env.*
+security/keystore/enclaves/**/key.pem
+security/keystore/**/private.key
+
+# Temporary files & Editor Backups
 *~
 *.swp
 *.swo

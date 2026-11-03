@@ -96,9 +96,17 @@ void IRAM_ATTR isr_right_encoder() {
 // ==============================================================================
 void on_cmd_vel(const CmdVelPayload &cmd) {
     if (!estop_active) {
-        target_rad_s_left = cmd.left_target_rad_s;
-        target_rad_s_right = cmd.right_target_rad_s;
-        manual_pwm_mode = false;
+        // Defensive bounds & NaN/Inf verification
+        if (!isnan(cmd.left_target_rad_s) && !isinf(cmd.left_target_rad_s) &&
+            !isnan(cmd.right_target_rad_s) && !isinf(cmd.right_target_rad_s)) {
+            // Strictly clamp setpoint within rated motor physical envelope (+/- 25 rad/s)
+            target_rad_s_left = constrain(cmd.left_target_rad_s, -25.0f, 25.0f);
+            target_rad_s_right = constrain(cmd.right_target_rad_s, -25.0f, 25.0f);
+            manual_pwm_mode = false;
+        } else {
+            target_rad_s_left = 0.0f;
+            target_rad_s_right = 0.0f;
+        }
     }
     last_packet_time = millis();
 }

@@ -5,17 +5,17 @@
 [![ESP32-S3](https://img.shields.io/badge/MCU-ESP32--S3%20Xtensa%20LX7-E7352C?logo=espressif&logoColor=white)](https://www.espressif.com/en/products/socs/esp32-s3)
 [![PlatformIO](https://img.shields.io/badge/Firmware-PlatformIO%20Core-F48041?logo=platformio&logoColor=white)](https://platformio.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Maintainer](https://img.shields.io/badge/Maintainer-Naman%20Harshwal-brightgreen.svg)](mailto:namanharshwal@gmail.com)
-[![Company](https://img.shields.io/badge/Company-COMP--POINT%20PVT.%20LTD.%20India-orange.svg)](mailto:namanharshwal@gmail.com)
+[![Security](https://img.shields.io/badge/Security-SROS2%20%7C%20DDS--Sec%20%7C%20Hardened-green.svg)](SECURITY.md)
+[![Author](https://img.shields.io/badge/Author%20%26%20Maintainer-Naman%20Harshwal-brightgreen.svg)](mailto:namanharshwal@gmail.com)
+[![Copyright](https://img.shields.io/badge/Copyright-%C2%A9%202025--2026%20Naman%20Harshwal-blue.svg)](LICENSE)
 
 ---
 
 ## Master Engineering & Production Documentation
 
-* **Project Architect & Maintainer:** Naman Harshwal  
-* **Engineering Organization:** COMP-POINT PVT. LTD. India  
+* **Project Architect, Author & Sole Copyright Holder:** Naman Harshwal  
 * **Official Contact:** [namanharshwal@gmail.com](mailto:namanharshwal@gmail.com)  
-* **Repository:** [https://github.com/namanharshwal/Hotel_Serving_Robot](https://github.com/namanharshwal/Hotel_Serving_Robot)  
+* **GitHub Repository:** [https://github.com/namanharshwal/Hotel_Serving_Robot](https://github.com/namanharshwal/Hotel_Serving_Robot)  
 * **High-Level Compute SBC:** NVIDIA Jetson Orin Nano Super Developer Kit (8GB RAM, NVMe SSD)  
 * **Real-Time Motion & Safety Mediator:** ESP32-S3-DevKitC-1 (Xtensa 32-bit Dual-Core LX7 @ 240 MHz)  
 * **Robotics Middleware:** ROS 2 Humble Hawksbill (Ubuntu 22.04 LTS / JetPack 6.x)  
@@ -59,14 +59,19 @@
 9. [Pre-Flight Hardware Diagnostics & Verification Suite](#9-pre-flight-hardware-diagnostics--verification-suite)
 10. [Launching the Full Autonomous Stack](#10-launching-the-full-autonomous-stack)
 11. [Multi-Tier Safety Systems & Reflex Braking](#11-multi-tier-safety-systems--reflex-braking)
-12. [Troubleshooting & Frequently Asked Questions (FAQ)](#12-troubleshooting--frequently-asked-questions-faq)
-13. [Authorship & Intellectual Property Notice](#13-authorship--intellectual-property-notice)
+12. [Enterprise Security Architecture & System Hardening](#12-enterprise-security-architecture--system-hardening)
+    - [12.1 SROS2 & DDS-Security Specification (PKI & Wire Encryption)](#121-sros2--dds-security-specification-pki--wire-encryption)
+    - [12.2 Linux Host & Network Hardening (UFW & Sysctl)](#122-linux-host--network-hardening-ufw--sysctl)
+    - [12.3 Real-Time Hardware & Firmware Hardening](#123-real-time-hardware--firmware-hardening)
+    - [12.4 Automated Static Security Audit Tool](#124-automated-static-security-audit-tool)
+13. [Troubleshooting & Frequently Asked Questions (FAQ)](#13-troubleshooting--frequently-asked-questions-faq)
+14. [Authorship & Intellectual Property Notice](#14-authorship--intellectual-property-notice)
 
 ---
 
 ## 1. Executive Summary & System Architecture
 
-The **Hotel Serving Robot (Nammy Robot)** is an industrial-grade, heavy-payload differential drive Autonomous Mobile Robot (AMR) designed, developed, and maintained by **Naman Harshwal** at **COMP-POINT PVT. LTD. India**. The system is engineered to navigate dynamic indoor hotel, restaurant, and hospital environments with absolute precision, zero collision risk, and sub-millimeter dead-reckoning accuracy.
+The **Hotel Serving Robot (Nammy Robot)** is an industrial-grade, heavy-payload differential drive Autonomous Mobile Robot (AMR) designed, developed, and maintained by **Naman Harshwal**. The system is engineered to navigate dynamic indoor hotel, restaurant, and hospital environments with absolute precision, zero collision risk, and sub-millimeter dead-reckoning accuracy.
 
 The robot features a **two-tier compute and control architecture**:
 1. **High-Level Compute Layer (NVIDIA Jetson Orin Nano Super):**
@@ -695,7 +700,8 @@ sudo apt update && sudo apt install -y \
     cmake \
     libusb-1.0-0-dev \
     i2c-tools \
-    python3-smbus
+    python3-smbus \
+    ufw
 ```
 
 Add your user to the required hardware device groups:
@@ -791,7 +797,7 @@ This script:
 2. Activates the isolated `.venv`.
 3. Sources `install/setup.bash`.
 4. Exports `ROS_DOMAIN_ID=42` to guarantee zero crosstalk with any other robot.
-5. Defines convenient developer aliases (`nammy_build`, `nammy_robot`, `nammy_teleop`, `nammy_dashboard`, `nammy_view`).
+5. Defines convenient developer and security aliases (`nammy_build`, `nammy_robot`, `nammy_teleop`, `nammy_dashboard`, `nammy_view`, `nammy_security`, `nammy_sros2`).
 
 ---
 
@@ -886,7 +892,80 @@ Safety in hospitality environments is paramount. Nammy Robot features a **four-l
 
 ---
 
-## 12. Troubleshooting & Frequently Asked Questions (FAQ)
+## 12. Enterprise Security Architecture & System Hardening
+
+To ensure complete cyber-physical security in hospitality and public environments, Nammy Robot incorporates a multi-layer security hardening framework:
+
+```
++-------------------------------------------------------------------------------+
+|                      COMPREHENSIVE ROBOT SECURITY MATRIX                      |
++-------------------------------------------------------------------------------+
+| Layer 1: Middleware Security (SROS2 / OMG DDS-Security)                       |
+|   - Cryptographic X.509 PKI authentication per node                           |
+|   - Granular topic access control (governance.xml & permissions.xml)          |
+|   - AES-GCM (128/256-bit) wire encryption for DDS RTPS packets                |
++-------------------------------------------------------------------------------+
+| Layer 2: Host Operating System & Network Hardening                            |
+|   - UFW firewall denying all unauthorized incoming traffic                    |
+|   - Udev hardware least-privilege (0660 dialout/plugdev)                      |
+|   - Linux kernel sysctl protection against IP spoofing and SYN floods         |
++-------------------------------------------------------------------------------+
+| Layer 3: Real-Time Hardware & Firmware Hardening                              |
+|   - Binary frame verification with 16-bit CCITT CRC checksum (0x1021)         |
+|   - Strict velocity bounds [-1.2 to +1.2 m/s] & NaN / Infinity rejection      |
+|   - 300 ms communications watchdog auto-halting motors on signal loss         |
+|   - Autonomous < 10 ms hardware reflex braking on obstacle breach             |
++-------------------------------------------------------------------------------+
+| Layer 4: Static Supply-Chain & Credential Protection                          |
+|   - Automated secret and credential scanner (scripts/security_check.py)       |
+|   - Strict .gitignore shielding private keys (*.key, *.pem), env files        |
++-------------------------------------------------------------------------------+
+```
+
+### 12.1 SROS2 & DDS-Security Specification (PKI & Wire Encryption)
+Standard ROS 2 uses unencrypted DDS multicast which can be intercepted or spoofed on shared Wi-Fi networks. Nammy Robot integrates **SROS2 (Security for ROS 2)**:
+* **Mutual Authentication:** Every node proves its identity via X.509 digital certificates.
+* **Access Control:** Nodes can only publish or subscribe to topics explicitly authorized in their cryptographic profile.
+* **Encryption:** Wire packets are encrypted using AES-GCM, preventing unauthorized viewing of sensor data or motor commands.
+
+To generate the SROS2 cryptographic vault:
+```bash
+source /home/comppoint/Documents/nammy_ws/activate_nammy.sh
+bash /home/comppoint/Documents/nammy_ws/scripts/setup_sros2_security.sh
+```
+
+To run the robot stack in enforced encrypted mode:
+```bash
+export ROS_SECURITY_ENABLE=true
+export ROS_SECURITY_STRATEGY=Enforce
+export ROS_SECURITY_KEYSTORE=/home/comppoint/Documents/nammy_ws/security/keystore
+ros2 launch nammy_bringup robot.launch.py
+```
+
+### 12.2 Linux Host & Network Hardening (UFW & Sysctl)
+Execute the host security script to configure the UFW firewall, tighten hardware udev rules, and apply kernel sysctl rules:
+```bash
+sudo bash /home/comppoint/Documents/nammy_ws/scripts/harden_system_security.sh
+```
+
+### 12.3 Real-Time Hardware & Firmware Hardening
+* **Defensive Input Sanitization:** Both the Python bridge node ([`esp32_hardware_bridge.py`](src/nammy_base/nammy_base/esp32_hardware_bridge.py)) and the ESP32-S3 firmware ([`main.cpp`](firmware/esp32s3_smartelex_driver/src/main.cpp)) actively sanitize velocity commands:
+  * Any packet with `NaN` or `Infinity` is immediately rejected.
+  * Linear velocity is clamped to $[-1.2, +1.2]\text{ m/s}$.
+  * Angular yaw rate is clamped to $[-2.5, +2.5]\text{ rad/s}$.
+  * Wheel setpoints are constrained to $[-25.0, +25.0]\text{ rad/s}$.
+* **Frame CRC-16 Verification:** Every packet is checked against a 16-bit CRC checksum. Corrupted or truncated packets are instantly dropped before reaching motor registers.
+
+### 12.4 Automated Static Security Audit Tool
+Run our automated security auditor anytime to verify zero credential leaks, correct file permissions, and gitignore enforcement:
+```bash
+python3 /home/comppoint/Documents/nammy_ws/scripts/security_check.py
+```
+*(Or run the alias `nammy_security` after sourcing `activate_nammy.sh`).*
+
+---
+
+## 13. Troubleshooting & Frequently Asked Questions (FAQ)
 
 ### Q1: Permission denied when accessing `/dev/ttyACM0` or `/dev/ttyUSB0`
 **Cause:** The current user does not belong to the `dialout` group.  
@@ -920,17 +999,15 @@ Then retry `pio run -t upload --upload-port /dev/ttyACM0`. If the ESP32 is stuck
 
 ---
 
-## 13. Authorship & Intellectual Property Notice
+## 14. Authorship & Intellectual Property Notice
 
 ```
 ================================================================================
 HOTEL SERVING ROBOT (NAMMY ROBOT PLATFORM)
 MODULAR AUTONOMOUS ROBOTICS COMPUTING & CONTROL SUITE
-Copyright (c) 2025-2026 Naman Harshwal, COMP-POINT PVT. LTD. India.
-All rights reserved.
+Copyright (c) 2025-2026 Naman Harshwal. All rights reserved.
 
-Project Architect & Maintainer: Naman Harshwal
-Organization: COMP-POINT PVT. LTD. India
+Project Architect, Author & Sole Copyright Holder: Naman Harshwal
 Official Contact: namanharshwal@gmail.com
 GitHub Repository: https://github.com/namanharshwal/Hotel_Serving_Robot
 License: Apache License, Version 2.0
