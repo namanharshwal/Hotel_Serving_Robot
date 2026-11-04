@@ -1,445 +1,589 @@
 <?xml version="1.0"?>
+<!--
+  =============================================================================
+  Hotel Serving Robot (Nammy Robot) - SolidWorks Master URDF & Kinematic Model
+  Author & Copyright: Naman Harshwal (namanharshwal@gmail.com)
+  License: Apache License, Version 2.0
+  Preserves the exact SolidWorks CAD physical properties, STL meshes, and inertias.
+  =============================================================================
+-->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="nammy_robot">
-
-  <!-- ============================================================================== -->
-  <!-- NAMMY ROBOT KINEMATIC & PHYSICAL PROPERTIES                                    -->
-  <!-- ============================================================================== -->
-  <xacro:property name="wheel_radius" value="0.050"/>      <!-- 100mm HD Disc Wheel (r=50mm) -->
-  <xacro:property name="wheel_width" value="0.035"/>       <!-- 35mm tire width -->
-  <xacro:property name="wheel_separation" value="0.380"/>  <!-- 380mm track width -->
-  
-  <xacro:property name="chassis_length" value="0.460"/>    <!-- 460mm length -->
-  <xacro:property name="chassis_width" value="0.320"/>     <!-- 320mm width -->
-  <xacro:property name="chassis_height" value="0.140"/>    <!-- 140mm height -->
-  <xacro:property name="chassis_mass" value="12.0"/>       <!-- 12 kg chassis + battery + motors -->
-
-  <xacro:property name="caster_radius" value="0.025"/>
-  <xacro:property name="caster_x_offset" value="0.180"/>
 
   <!-- ============================================================================== -->
   <!-- MATERIALS                                                                      -->
   <!-- ============================================================================== -->
-  <material name="chassis_blue">
-    <color rgba="0.05 0.25 0.55 1.0"/>
+  <material name="chassis_silver">
+    <color rgba="0.79216 0.81961 0.93333 1.0"/>
   </material>
-  <material name="wheel_grey">
-    <color rgba="0.25 0.25 0.28 1.0"/>
+  <material name="tire_dark">
+    <color rgba="0.2 0.2 0.2 1.0"/>
   </material>
-  <material name="rim_silver">
-    <color rgba="0.75 0.75 0.78 1.0"/>
+  <material name="lidar_white">
+    <color rgba="0.95 0.95 0.95 1.0"/>
   </material>
-  <material name="display_black">
-    <color rgba="0.08 0.08 0.08 1.0"/>
+  <material name="imu_blue">
+    <color rgba="0.0 0.3 0.8 1.0"/>
   </material>
-  <material name="screen_glass">
-    <color rgba="0.12 0.35 0.45 0.9"/>
+  <material name="sonar_gold">
+    <color rgba="0.9 0.75 0.1 1.0"/>
   </material>
-  <material name="battery_cyan">
-    <color rgba="0.0 0.5 0.65 1.0"/>
+  <material name="display_bezel">
+    <color rgba="0.1 0.1 0.1 1.0"/>
   </material>
-  <material name="pcb_green">
-    <color rgba="0.05 0.5 0.15 1.0"/>
-  </material>
-  <material name="heatsink_black">
-    <color rgba="0.15 0.15 0.15 1.0"/>
+  <material name="display_glass">
+    <color rgba="0.15 0.35 0.45 0.85"/>
   </material>
 
   <!-- ============================================================================== -->
-  <!-- ROOT BASE LINKS                                                                -->
+  <!-- ROOT BASE FOOTPRINT (Ground Projection)                                        -->
   <!-- ============================================================================== -->
   <link name="base_footprint"/>
 
   <joint name="base_footprint_joint" type="fixed">
+    <origin xyz="0 0 0.033293" rpy="0 0 0"/>
     <parent link="base_footprint"/>
     <child link="base_link"/>
-    <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
   </joint>
 
-  <!-- Main Chassis Body -->
+  <!-- ============================================================================== -->
+  <!-- BASE LINK (SolidWorks Main Chassis)                                            -->
+  <!-- ============================================================================== -->
   <link name="base_link">
-    <visual>
-      <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
-      <geometry>
-        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
-      </geometry>
-      <material name="chassis_blue"/>
-    </visual>
-    <collision>
-      <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
-      <geometry>
-        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
-      </geometry>
-    </collision>
     <inertial>
-      <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
-      <mass value="${chassis_mass}"/>
-      <inertia ixx="${(1/12)*chassis_mass*(chassis_width*chassis_width + chassis_height*chassis_height)}" 
-               ixy="0.0" ixz="0.0" 
-               iyy="${(1/12)*chassis_mass*(chassis_length*chassis_length + chassis_height*chassis_height)}" 
-               iyz="0.0" 
-               izz="${(1/12)*chassis_mass*(chassis_length*chassis_length + chassis_width*chassis_width)}"/>
+      <origin xyz="0.020032 2.5016E-06 0.0072756" rpy="0 0 0"/>
+      <mass value="2.8246"/>
+      <inertia
+        ixx="0.037562" ixy="4.1763E-08" ixz="-3.154E-05"
+        iyy="0.041801" iyz="-7.8675E-10"
+        izz="0.078777"/>
     </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/base_link.STL"/>
+      </geometry>
+      <material name="chassis_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/base_link.STL"/>
+      </geometry>
+    </collision>
   </link>
 
   <!-- ============================================================================== -->
-  <!-- 100mm HEAVY DUTY DISC WHEELS (DRIVE AXLE)                                     -->
+  <!-- RIGHT DRIVE WHEEL (SolidWorks Wheel Model)                                     -->
   <!-- ============================================================================== -->
-  <!-- Left Wheel -->
-  <link name="left_wheel_link">
-    <visual>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-      <geometry>
-        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
-      </geometry>
-      <material name="wheel_grey"/>
-    </visual>
-    <visual>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-      <geometry>
-        <cylinder radius="${wheel_radius*0.65}" length="${wheel_width+0.002}"/>
-      </geometry>
-      <material name="rim_silver"/>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-      <geometry>
-        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
-      </geometry>
-    </collision>
+  <link name="right_wheel">
     <inertial>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-      <mass value="0.65"/>
-      <inertia ixx="${(1/12)*0.65*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)}" 
-               ixy="0" ixz="0" 
-               iyy="${(1/12)*0.65*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)}" 
-               iyz="0" 
-               izz="${(1/2)*0.65*wheel_radius*wheel_radius}"/>
+      <origin xyz="-0.000153905731059778 5.63981063028685E-06 0.0303744944581952" rpy="0 0 0"/>
+      <mass value="0.988406758977507"/>
+      <inertia
+        ixx="0.00167499249358559" ixy="-1.18463824720553E-08" ixz="2.58035199821348E-07"
+        iyy="0.00167501984402528" iyz="-3.04509965905957E-07"
+        izz="0.00287892208388263"/>
     </inertial>
-  </link>
-
-  <joint name="left_wheel_joint" type="continuous">
-    <parent link="base_link"/>
-    <child link="left_wheel_link"/>
-    <origin xyz="0 ${wheel_separation/2} 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
-  </joint>
-
-  <!-- Right Wheel -->
-  <link name="right_wheel_link">
     <visual>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        <mesh filename="package://nammy_description/meshes/right_wheel.STL"/>
       </geometry>
-      <material name="wheel_grey"/>
-    </visual>
-    <visual>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-      <geometry>
-        <cylinder radius="${wheel_radius*0.65}" length="${wheel_width+0.002}"/>
-      </geometry>
-      <material name="rim_silver"/>
+      <material name="tire_dark"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        <mesh filename="package://nammy_description/meshes/right_wheel.STL"/>
       </geometry>
     </collision>
+  </link>
+
+  <joint name="rtwheeljt" type="continuous">
+    <origin xyz="-6.6311E-05 -0.1874 0.033293" rpy="-1.5708 0 0"/>
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="15" velocity="25"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <!-- ============================================================================== -->
+  <!-- LEFT DRIVE WHEEL (SolidWorks Wheel Model)                                      -->
+  <!-- ============================================================================== -->
+  <link name="left_wheel">
     <inertial>
-      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-      <mass value="0.65"/>
-      <inertia ixx="${(1/12)*0.65*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)}" 
-               ixy="0" ixz="0" 
-               iyy="${(1/12)*0.65*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)}" 
-               iyz="0" 
-               izz="${(1/2)*0.65*wheel_radius*wheel_radius}"/>
+      <origin xyz="4.77905427032077E-06 5.63981063064767E-06 -0.0303744944581938" rpy="0 0 0"/>
+      <mass value="0.988406758977505"/>
+      <inertia
+        ixx="0.00167499249358559" ixy="1.18463824762049E-08" ixz="2.58035199828615E-07"
+        iyy="0.00167501984402528" iyz="3.04509965898877E-07"
+        izz="0.00287892208388262"/>
     </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/left_wheel.STL"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/left_wheel.STL"/>
+      </geometry>
+    </collision>
   </link>
 
-  <joint name="right_wheel_joint" type="continuous">
+  <joint name="ltwheeljt" type="continuous">
+    <origin xyz="-6.6311E-05 0.18743 0.033293" rpy="-1.5708 0 0"/>
     <parent link="base_link"/>
-    <child link="right_wheel_link"/>
-    <origin xyz="0 ${-wheel_separation/2} 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
+    <child link="left_wheel"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="15" velocity="25"/>
+    <dynamics damping="0.1" friction="0.1"/>
   </joint>
 
   <!-- ============================================================================== -->
-  <!-- FRONT & REAR PASSIVE CASTER WHEELS                                             -->
+  <!-- FRONT CASTER ASSEMBLY (SolidWorks Castor & Wheel)                              -->
   <!-- ============================================================================== -->
-  <!-- Front Caster -->
-  <link name="front_caster_link">
-    <visual>
-      <geometry>
-        <sphere radius="${caster_radius}"/>
-      </geometry>
-      <material name="wheel_grey"/>
-    </visual>
-    <collision>
-      <geometry>
-        <sphere radius="${caster_radius}"/>
-      </geometry>
-    </collision>
+  <link name="front_castor">
     <inertial>
-      <mass value="0.25"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <origin xyz="-7.19722439490589E-06 -0.000594523126286717 -0.0150007448059787" rpy="0 0 0"/>
+      <mass value="0.0154137567568997"/>
+      <inertia
+        ixx="7.69974453390217E-06" ixy="4.95170233721413E-10" ixz="-2.87438512726075E-10"
+        iyy="1.69225134213422E-06" iyz="-2.38173383574039E-13"
+        izz="7.74409516442039E-06"/>
     </inertial>
-  </link>
-
-  <joint name="front_caster_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="front_caster_link"/>
-    <origin xyz="${caster_x_offset} 0 ${-wheel_radius + caster_radius}" rpy="0 0 0"/>
-  </joint>
-
-  <!-- Rear Caster -->
-  <link name="rear_caster_link">
     <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <sphere radius="${caster_radius}"/>
+        <mesh filename="package://nammy_description/meshes/front_castor.STL"/>
       </geometry>
-      <material name="wheel_grey"/>
+      <material name="chassis_silver"/>
     </visual>
     <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <sphere radius="${caster_radius}"/>
+        <mesh filename="package://nammy_description/meshes/front_castor.STL"/>
       </geometry>
     </collision>
+  </link>
+
+  <joint name="ftcastorjt" type="fixed">
+    <origin xyz="0.2235 0 -0.015" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="front_castor"/>
+  </joint>
+
+  <link name="front_wheel">
     <inertial>
-      <mass value="0.25"/>
-      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+      <origin xyz="6.37783459378483E-09 5.21249710061511E-14 -7.8196618697679E-05" rpy="0 0 0"/>
+      <mass value="0.0169008319161431"/>
+      <inertia
+        ixx="2.41636698596104E-06" ixy="-1.44460473203424E-22" ixz="7.25380393817739E-11"
+        iyy="2.41636699187733E-06" iyz="3.18358490283343E-21"
+        izz="1.52699798902101E-06"/>
     </inertial>
-  </link>
-
-  <joint name="rear_caster_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="rear_caster_link"/>
-    <origin xyz="${-caster_x_offset} 0 ${-wheel_radius + caster_radius}" rpy="0 0 0"/>
-  </joint>
-
-  <!-- ============================================================================== -->
-  <!-- 24V 15Ah LiFePO4 BATTERY PACK (380Wh, 32140 Cells, 20A BMS)                    -->
-  <!-- ============================================================================== -->
-  <link name="battery_link">
     <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.220 0.140 0.080"/>
+        <mesh filename="package://nammy_description/meshes/front_wheel.STL"/>
       </geometry>
-      <material name="battery_cyan"/>
-    </visual>
-  </link>
-
-  <joint name="battery_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="battery_link"/>
-    <origin xyz="0 0 0.045" rpy="0 0 0"/>
-  </joint>
-
-  <!-- ============================================================================== -->
-  <!-- DUAL SMARTELEX 30S MOTOR DRIVERS (30A SINGLE CHANNEL)                          -->
-  <!-- ============================================================================== -->
-  <!-- Left Motor Driver -->
-  <link name="driver_left_link">
-    <visual>
-      <geometry>
-        <box size="0.075 0.055 0.025"/>
-      </geometry>
-      <material name="heatsink_black"/>
-    </visual>
-  </link>
-
-  <joint name="driver_left_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="driver_left_link"/>
-    <origin xyz="-0.100 0.080 0.100" rpy="0 0 0"/>
-  </joint>
-
-  <!-- Right Motor Driver -->
-  <link name="driver_right_link">
-    <visual>
-      <geometry>
-        <box size="0.075 0.055 0.025"/>
-      </geometry>
-      <material name="heatsink_black"/>
-    </visual>
-  </link>
-
-  <joint name="driver_right_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="driver_right_link"/>
-    <origin xyz="-0.100 -0.080 0.100" rpy="0 0 0"/>
-  </joint>
-
-  <!-- ============================================================================== -->
-  <!-- ESP32-S3-DevKitC-1 WIRELESS CONTROLLER                                         -->
-  <!-- ============================================================================== -->
-  <link name="esp32_link">
-    <visual>
-      <geometry>
-        <box size="0.065 0.028 0.012"/>
-      </geometry>
-      <material name="pcb_green"/>
-    </visual>
-  </link>
-
-  <joint name="esp32_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="esp32_link"/>
-    <origin xyz="-0.100 0.0 0.120" rpy="0 0 0"/>
-  </joint>
-
-  <!-- ============================================================================== -->
-  <!-- 10.1 INCH CAPACITIVE TOUCH DISPLAY (1280x800 IPS HDMI, SKU: WVSH0067)          -->
-  <!-- ============================================================================== -->
-  <!-- Angled Display Mount Pedestal -->
-  <link name="display_mount_link">
-    <visual>
-      <origin xyz="0 0 0.05" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.020" length="0.10"/>
-      </geometry>
-      <material name="rim_silver"/>
-    </visual>
-  </link>
-
-  <joint name="display_mount_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="display_mount_link"/>
-    <origin xyz="0.080 0 ${chassis_height}" rpy="0 0 0"/>
-  </joint>
-
-  <!-- 10.1" Display Housing (tilted 30 degrees toward rear for optimal operator viewing) -->
-  <link name="display_link">
-    <visual>
-      <!-- Housing Bezel: 238mm x 155mm x 15mm -->
-      <geometry>
-        <box size="0.015 0.238 0.155"/>
-      </geometry>
-      <material name="display_black"/>
-    </visual>
-    <!-- Screen Glass Surface: 217mm x 136mm Active Area (1280x800) -->
-    <visual>
-      <origin xyz="0.008 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.002 0.217 0.136"/>
-      </geometry>
-      <material name="screen_glass"/>
-    </visual>
-  </link>
-
-  <joint name="display_joint" type="fixed">
-    <parent link="display_mount_link"/>
-    <child link="display_link"/>
-    <origin xyz="0 0 0.10" rpy="0 -0.5236 0"/>  <!-- -30 deg pitch -->
-  </joint>
-
-  <!-- ============================================================================== -->
-  <!-- 4x US-100 ULTRASONIC SENSORS (BUMPER LEVEL FOR LOW OBSTACLE & GLASS DETECTION) -->
-  <!-- ============================================================================== -->
-  <xacro:macro name="us100_sonar" params="name parent x y z yaw">
-    <link name="${name}_link">
-      <visual>
-        <!-- US-100 PCB Base -->
-        <origin xyz="-0.005 0 0" rpy="0 0 0"/>
-        <geometry>
-          <box size="0.005 0.045 0.020"/>
-        </geometry>
-        <material name="pcb_green"/>
-      </visual>
-      <!-- Dual Ultrasonic Cylindrical Transducers (Tx & Rx) -->
-      <visual>
-        <origin xyz="0.005 0.013 0" rpy="0 ${pi/2} 0"/>
-        <geometry>
-          <cylinder radius="0.008" length="0.012"/>
-        </geometry>
-        <material name="rim_silver"/>
-      </visual>
-      <visual>
-        <origin xyz="0.005 -0.013 0" rpy="0 ${pi/2} 0"/>
-        <geometry>
-          <cylinder radius="0.008" length="0.012"/>
-        </geometry>
-        <material name="rim_silver"/>
-      </visual>
-      <collision>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <box size="0.015 0.045 0.020"/>
-        </geometry>
-      </collision>
-    </link>
-
-    <joint name="${name}_joint" type="fixed">
-      <parent link="${parent}"/>
-      <child link="${name}_link"/>
-      <origin xyz="${x} ${y} ${z}" rpy="0 0 ${yaw}"/>
-    </joint>
-  </xacro:macro>
-
-  <!-- Front Sonar (Forward collision & glass detection) -->
-  <xacro:us100_sonar name="front_sonar" parent="base_link" x="${chassis_length/2 + 0.005}" y="0.0" z="0.060" yaw="0.0"/>
-
-  <!-- Left Sonar (Left wall following & blind spot coverage) -->
-  <xacro:us100_sonar name="left_sonar" parent="base_link" x="0.0" y="${chassis_width/2 + 0.005}" z="0.060" yaw="${pi/2}"/>
-
-  <!-- Right Sonar (Right wall following & blind spot coverage) -->
-  <xacro:us100_sonar name="right_sonar" parent="base_link" x="0.0" y="${-chassis_width/2 - 0.005}" z="0.060" yaw="${-pi/2}"/>
-
-  <!-- Rear Sonar (Reversing protection & docking) -->
-  <xacro:us100_sonar name="rear_sonar" parent="base_link" x="${-chassis_length/2 - 0.005}" y="0.0" z="0.060" yaw="${pi}"/>
-
-  <!-- ============================================================================== -->
-  <!-- SENSOR MOUNTS (YDLIDAR G2 & IMU)                                               -->
-  <!-- ============================================================================== -->
-  <!-- YDLIDAR G2 360-Degree 2D Laser Scanner -->
-  <link name="laser">
-    <!-- Stationary Base -->
-    <visual>
-      <origin xyz="0 0 0.015" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.035" length="0.030"/>
-      </geometry>
-      <material name="display_black"/>
-    </visual>
-    <!-- Rotating Optical Head -->
-    <visual>
-      <origin xyz="0 0 0.035" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.032" length="0.016"/>
-      </geometry>
-      <material name="screen_glass"/>
+      <material name="chassis_silver"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.036" length="0.050"/>
+        <mesh filename="package://nammy_description/meshes/front_wheel.STL"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="laser_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="laser"/>
-    <origin xyz="0.160 0 ${chassis_height}" rpy="0 0 0"/>
+  <joint name="ftwheeljt" type="fixed">
+    <origin xyz="0 0.00034763 -0.019" rpy="-1.5708 0 0"/>
+    <parent link="front_castor"/>
+    <child link="front_wheel"/>
   </joint>
 
   <!-- ============================================================================== -->
-  <!-- BOSCH BNO055 9-DOF IMU MOUNT                                                   -->
-  <!-- Located at Robot Center of Mass (CoM) for optimal orientation & acceleration   -->
+  <!-- BACK CASTER ASSEMBLY (SolidWorks Castor & Wheel)                               -->
+  <!-- ============================================================================== -->
+  <link name="back_castor">
+    <inertial>
+      <origin xyz="-7.19722439468384E-06 -0.000594523126285051 -0.015000744805979" rpy="0 0 0"/>
+      <mass value="0.0154137567568997"/>
+      <inertia
+        ixx="7.69974453390218E-06" ixy="4.95170233715715E-10" ixz="-2.87438512726142E-10"
+        iyy="1.69225134213422E-06" iyz="-2.38173382942366E-13"
+        izz="7.74409516442041E-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/back_castor.STL"/>
+      </geometry>
+      <material name="chassis_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/back_castor.STL"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="bkcstrljt" type="fixed">
+    <origin xyz="-0.2235 0 -0.015" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="back_castor"/>
+  </joint>
+
+  <link name="back_wheel">
+    <inertial>
+      <origin xyz="6.37783514889634E-09 5.19584375524573E-14 -7.81966186964578E-05" rpy="0 0 0"/>
+      <mass value="0.016900831916143"/>
+      <inertia
+        ixx="2.41636698596139E-06" ixy="2.02953885683255E-20" ixz="7.25380393796678E-11"
+        iyy="2.41636699187766E-06" iyz="3.10903118844173E-21"
+        izz="1.52699798901973E-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/back_wheel.STL"/>
+      </geometry>
+      <material name="chassis_silver"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/back_wheel.STL"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="bkwheeljt" type="fixed">
+    <origin xyz="0 0.00034763 -0.019" rpy="-1.5708 0 0"/>
+    <parent link="back_castor"/>
+    <child link="back_wheel"/>
+  </joint>
+
+  <!-- ============================================================================== -->
+  <!-- BOSCH BNO055 9-DOF IMU SENSOR                                                  -->
   <!-- ============================================================================== -->
   <link name="imu_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.01"/>
+      <inertia
+        ixx="0.0001" ixy="0" ixz="0"
+        iyy="0.0001" iyz="0"
+        izz="0.0001"/>
+    </inertial>
     <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.025 0.020 0.005"/>
+        <box size="0.025 0.025 0.015"/>
       </geometry>
-      <material name="pcb_green"/>
+      <material name="imu_blue"/>
     </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.015"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="imu_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.06" rpy="0 0 0"/>
     <parent link="base_link"/>
     <child link="imu_link"/>
-    <origin xyz="0.0 0.0 ${chassis_height/2}" rpy="0 0 0"/>
   </joint>
+
+  <!-- ============================================================================== -->
+  <!-- YDLIDAR G2 360-DEGREE 2D LASER SCANNER (SolidWorks Sensor Mesh)               -->
+  <!-- ============================================================================== -->
+  <link name="laser_frame">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.17"/>
+      <inertia
+        ixx="0.001" ixy="0" ixz="0"
+        iyy="0.001" iyz="0"
+        izz="0.001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/lidar_sensor.STL" scale="1 1 1"/>
+      </geometry>
+      <material name="lidar_white"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://nammy_description/meshes/lidar_sensor.STL"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <origin xyz="0.23449 -4.7499E-05 0.11547" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="laser_frame"/>
+  </joint>
+
+  <!-- ============================================================================== -->
+  <!-- 4-CHANNEL US-100 ULTRASONIC SENSOR ARRAY                                       -->
+  <!-- ============================================================================== -->
+  <!-- 1. Front Bumper Ultrasonic Sensor -->
+  <link name="front_sonar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+      <material name="sonar_gold"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 -0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="front_sonar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_sonar_link"/>
+    <origin xyz="0.250 0.0 0.035" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 2. Left Flank Ultrasonic Sensor -->
+  <link name="left_sonar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+      <material name="sonar_gold"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 -0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="left_sonar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="left_sonar_link"/>
+    <origin xyz="0.0 0.200 0.035" rpy="0 0 ${pi/2}"/>
+  </joint>
+
+  <!-- 3. Right Flank Ultrasonic Sensor -->
+  <link name="right_sonar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+      <material name="sonar_gold"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 -0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="right_sonar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_sonar_link"/>
+    <origin xyz="0.0 -0.200 0.035" rpy="0 0 ${-pi/2}"/>
+  </joint>
+
+  <!-- 4. Rear Bumper Ultrasonic Sensor -->
+  <link name="rear_sonar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+      <material name="sonar_gold"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 -0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <visual>
+      <origin xyz="0.010 0.013 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="0.008" length="0.008"/>
+      </geometry>
+      <material name="tire_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.020 0.045 0.020"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.015"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="rear_sonar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_sonar_link"/>
+    <origin xyz="-0.250 0.0 0.035" rpy="0 0 ${pi}"/>
+  </joint>
+
+  <!-- ============================================================================== -->
+  <!-- 10.1 INCH CAPACITIVE TOUCHSCREEN HMI DISPLAY CONSOLE                            -->
+  <!-- ============================================================================== -->
+  <link name="touch_display_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.245 0.160 0.015"/>
+      </geometry>
+      <material name="display_bezel"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.217 0.136 0.002"/>
+      </geometry>
+      <material name="display_glass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.245 0.160 0.015"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.45"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="touch_display_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="touch_display_link"/>
+    <origin xyz="0.05 0.0 0.22" rpy="0 -0.523598 0"/>
+  </joint>
+
+  <!-- ============================================================================== -->
+  <!-- GAZEBO PHYSICS & SENSOR CONFIGURATION                                          -->
+  <!-- ============================================================================== -->
+  <gazebo reference="base_link">
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+  </gazebo>
+
+  <gazebo reference="left_wheel">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+  </gazebo>
+
+  <gazebo reference="right_wheel">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+  </gazebo>
+
+  <gazebo reference="front_castor">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <gazebo reference="front_wheel">
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
+  </gazebo>
+
+  <gazebo reference="back_castor">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <gazebo reference="back_wheel">
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
+  </gazebo>
 
 </robot>

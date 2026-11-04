@@ -664,7 +664,11 @@ nammy_ws/src/
 
 7. **[`nammy_description`](src/nammy_description):**
    * **Xacro File:** [`nammy_robot.urdf.xacro`](src/nammy_description/urdf/nammy_robot.urdf.xacro)
-   * **Features:** Complete kinematic tree from `base_footprint` to `base_link`, 100mm wheels, tilted touch screen, YDLIDAR optical centre (`laser_frame`), BNO055 `imu_link`, and 4 ultrasonic links (`front_sonar_link`, `left_sonar_link`, `right_sonar_link`, `rear_sonar_link`).
+   * **Visual & Collision CAD Meshes:** 8 high-fidelity SolidWorks binary STL models (`base_link.STL`, `left_wheel.STL`, `right_wheel.STL`, `front_castor.STL`, `front_wheel.STL`, `back_castor.STL`, `back_wheel.STL`, `lidar_sensor.STL`).
+   * **Physical Dynamics:** Exact SolidWorks CAD mass and 3D inertia tensors ($I_{xx}, I_{yy}, I_{zz}, I_{xy}, I_{xz}, I_{yz}$) for chassis ($2.825\text{ kg}$), wheels ($0.988\text{ kg}$ each), and dual castor assemblies ($0.015\text{ kg}$ each).
+   * **Kinematic Joints:** SolidWorks exported continuous joint definitions (`ltwheeljt`, `rtwheeljt`) with dual-aliasing in `esp32_hardware_bridge.py` (`left_wheel_joint`, `right_wheel_joint`) ensuring full compatibility across standard ROS 2 tools and SolidWorks kinematic chains.
+   * **Sensor Links:** Ground projection `base_footprint` ($z=0$), BNO055 `imu_link`, YDLIDAR G2 optical centre (`laser_frame`), 10.1" tilted touchscreen console (`touch_display_link`), and 4 US-100 ultrasonic range frames (`front_sonar_link`, `left_sonar_link`, `right_sonar_link`, `rear_sonar_link`).
+   * **Visualization Suite:** Pre-configured RViz display profile [`rviz/view_robot.rviz`](src/nammy_description/rviz/view_robot.rviz) with TF tree inspection, grid plane, and real-time link tracking.
 
 8. **[`nammy_bringup`](src/nammy_bringup):**
    * **Master Launch:** [`robot.launch.py`](src/nammy_bringup/launch/robot.launch.py)

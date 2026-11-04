@@ -385,9 +385,10 @@ class ESP32HardwareBridge(Node):
         """Publish sensor_msgs/JointState for URDF wheel visualization."""
         js = JointState()
         js.header.stamp = current_time.to_msg()
-        js.name = ['left_wheel_joint', 'right_wheel_joint']
-        js.position = [self.left_pos, self.right_pos]
-        js.velocity = [self.left_vel, self.right_vel]
+        # Broadcast both SolidWorks URDF joint names (ltwheeljt, rtwheeljt) and aliases
+        js.name = ['ltwheeljt', 'rtwheeljt', 'left_wheel_joint', 'right_wheel_joint']
+        js.position = [self.left_pos, self.right_pos, self.left_pos, self.right_pos]
+        js.velocity = [self.left_vel, self.right_vel, self.left_vel, self.right_vel]
         self.joint_pub.publish(js)
 
     def publish_battery(self, current_time: Time):
