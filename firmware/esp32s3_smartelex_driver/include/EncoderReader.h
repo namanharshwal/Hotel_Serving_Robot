@@ -49,6 +49,7 @@ private:
     uint8_t _pin_a;
     uint8_t _pin_b;
     bool _inverted;
+    volatile uint8_t _last_state;
 
     volatile int64_t _ticks;
     int64_t _prev_ticks;

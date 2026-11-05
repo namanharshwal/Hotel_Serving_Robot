@@ -1,7 +1,19 @@
 #include "EncoderReader.h"
 
+// Canonical 4x quadrature Gray-code transition lookup table:
+// Index: (old_state << 2) | new_state where state is (PinA << 1) | PinB
+// States: 00 (0), 01 (1), 10 (2), 11 (3)
+// Forward:  00 -> 01 -> 11 -> 10 -> 00 (+1)
+// Reverse:  00 -> 10 -> 11 -> 01 -> 00 (-1)
+static const int8_t QUAD_TABLE[16] = {
+    0,  1, -1,  0,
+   -1,  0,  0,  1,
+    1,  0,  0, -1,
+    0, -1,  1,  0
+};
+
 EncoderReader::EncoderReader(uint8_t pin_a, uint8_t pin_b, bool inverted)
-    : _pin_a(pin_a), _pin_b(pin_b), _inverted(inverted),
+    : _pin_a(pin_a), _pin_b(pin_b), _inverted(inverted), _last_state(0),
       _ticks(0), _prev_ticks(0),
       _position_rad(0.0f), _velocity_rad_s(0.0f),
       _distance_m(0.0f), _linear_vel_m_s(0.0f) {}
@@ -9,18 +21,24 @@ EncoderReader::EncoderReader(uint8_t pin_a, uint8_t pin_b, bool inverted)
 void EncoderReader::begin() {
     pinMode(_pin_a, INPUT_PULLUP);
     pinMode(_pin_b, INPUT_PULLUP);
+    uint8_t a = digitalRead(_pin_a) ? 1 : 0;
+    uint8_t b = digitalRead(_pin_b) ? 1 : 0;
+    _last_state = (a << 1) | b;
     reset();
 }
 
 void IRAM_ATTR EncoderReader::handleISR() {
-    bool a = digitalRead(_pin_a);
-    bool b = digitalRead(_pin_b);
-
-    int8_t dir = (a == b) ? 1 : -1;
-    if (_inverted) {
-        dir = -dir;
+    uint8_t a = digitalRead(_pin_a) ? 1 : 0;
+    uint8_t b = digitalRead(_pin_b) ? 1 : 0;
+    uint8_t curr = (a << 1) | b;
+    int8_t delta = QUAD_TABLE[((_last_state & 0x03) << 2) | (curr & 0x03)];
+    _last_state = curr;
+    if (delta != 0) {
+        if (_inverted) {
+            delta = -delta;
+        }
+        _ticks += delta;
     }
-    _ticks += dir;
 }
 
 void EncoderReader::update(float dt) {
@@ -69,8 +87,8 @@ float EncoderReader::getLinearVelocityMs() const {
 void EncoderReader::reset() {
     noInterrupts();
     _ticks = 0;
-    _prev_ticks = 0;
     interrupts();
+    _prev_ticks = 0;
     _position_rad = 0.0f;
     _velocity_rad_s = 0.0f;
     _distance_m = 0.0f;

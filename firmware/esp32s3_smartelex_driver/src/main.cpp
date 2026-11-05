@@ -54,7 +54,7 @@
 SmartElex30S motor_left(PIN_MOTOR_L_PWM, PIN_MOTOR_L_DIR, 0, false);
 SmartElex30S motor_right(PIN_MOTOR_R_PWM, PIN_MOTOR_R_DIR, 1, false);
 
-EncoderReader enc_left(PIN_ENC_L_A, PIN_ENC_L_B, false);
+EncoderReader enc_left(PIN_ENC_L_A, PIN_ENC_L_B, true);
 EncoderReader enc_right(PIN_ENC_R_A, PIN_ENC_R_B, true);  // Inverted for mirrored axle
 
 VelocityPID pid_left(45.0f, 110.0f, 1.2f, 42.0f);

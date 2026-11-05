@@ -13,10 +13,12 @@ void SmartElex30S::begin(uint32_t freq_hz, uint8_t res_bits) {
 
     pinMode(_dir_pin, OUTPUT);
     digitalWrite(_dir_pin, LOW);
+    pinMode(_pwm_pin, OUTPUT);
+    digitalWrite(_pwm_pin, LOW);
 
     // Setup ESP32 LEDC PWM peripheral (compatible with Arduino ESP32 core 2.x and 3.x)
 #if defined(ESP_ARDUINO_VERSION_VAL) && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-    ledcAttachChannel(_pwm_pin, _freq, _resolution, _channel);
+    ledcAttach(_pwm_pin, _freq, _resolution);
 #else
     ledcSetup(_channel, _freq, _resolution);
     ledcAttachPin(_pwm_pin, _channel);
