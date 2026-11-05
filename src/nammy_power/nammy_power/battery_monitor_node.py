@@ -40,16 +40,17 @@ class BatteryMonitorNode(Node):
         self.current_voltage = msg.voltage
         self.current_pct = msg.percentage
 
-        # Trigger critical cutoff alert if voltage drops below safe threshold
+        # Trigger critical cutoff alert if voltage drops below safe threshold (throttled to 5s)
         if self.current_voltage < self.v_critical:
             alert = String()
             alert.data = f"CRITICAL: Battery voltage {self.current_voltage:.2f}V < {self.v_critical}V! Cutoff imminent!"
             self.alert_pub.publish(alert)
-            self.get_logger().error(alert.data)
+            self.get_logger().error(alert.data, throttle_duration_sec=5.0)
         elif self.current_voltage < self.v_low:
             alert = String()
             alert.data = f"WARNING: Low battery ({self.current_voltage:.2f}V / {int(self.current_pct*100)}%). Recharge required."
             self.alert_pub.publish(alert)
+            self.get_logger().warn(alert.data, throttle_duration_sec=5.0)
 
     def publish_diagnostics(self):
         diag_arr = DiagnosticArray()

@@ -41,6 +41,8 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('base_frame_id', 'base_footprint')
         self.declare_parameter('cmd_timeout', 0.3)           # Watchdog timeout in seconds
         self.declare_parameter('simulate_hardware', False)   # Auto-fallback if port not present
+        self.declare_parameter('max_linear_velocity', 1.2)   # Max linear velocity m/s
+        self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s
 
         # Retrieve Parameters
         self.port_name = self.get_parameter('serial_port').get_parameter_value().string_value
@@ -53,6 +55,8 @@ class ESP32HardwareBridge(Node):
         self.base_frame = self.get_parameter('base_frame_id').get_parameter_value().string_value
         self.cmd_timeout = self.get_parameter('cmd_timeout').get_parameter_value().double_value
         self.sim_mode = self.get_parameter('simulate_hardware').get_parameter_value().bool_value
+        self.max_v = self.get_parameter('max_linear_velocity').get_parameter_value().double_value
+        self.max_w = self.get_parameter('max_angular_velocity').get_parameter_value().double_value
 
         self.get_logger().info("==================================================================")
         self.get_logger().info("INITIALIZING NAMMY ROBOT ESP32-S3 HARDWARE BRIDGE")
