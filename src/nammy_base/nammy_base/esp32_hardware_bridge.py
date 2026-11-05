@@ -129,16 +129,33 @@ class ESP32HardwareBridge(Node):
             available = [p.device for p in serial.tools.list_ports.comports()]
             self.get_logger().info(f"Available serial ports: {available}")
             
-            # Check for fallback candidates
+            # Prioritize ACM ports (ESP32-S3) before USB ports (to avoid collision with LiDAR)
+            candidate_ports = sorted(available, key=lambda p: (0 if 'ACM' in p else 1))
             connected = False
-            for port in available:
-                if 'USB' in port or 'ACM' in port:
+            for port in candidate_ports:
+                if 'ACM' in port or 'USB' in port:
                     try:
-                        self.serial_conn = serial.Serial(port, self.baud_rate, timeout=0.05, write_timeout=0.05)
-                        self.port_name = port
-                        self.get_logger().info(f"[FALLBACK SUCCESS] Connected on {port}")
-                        connected = True
-                        break
+                        conn = serial.Serial(port, self.baud_rate, timeout=0.1, write_timeout=0.05)
+                        # Probe port for ESP32 telemetry signature (0xAA 0x55)
+                        probe_start = time.time()
+                        signature_found = False
+                        raw_buf = bytearray()
+                        while time.time() - probe_start < 0.25:
+                            if conn.in_waiting:
+                                raw_buf.extend(conn.read(conn.in_waiting))
+                                if b'\xaa\x55' in raw_buf:
+                                    signature_found = True
+                                    break
+                            time.sleep(0.02)
+                        
+                        if signature_found or 'ACM' in port:
+                            self.serial_conn = conn
+                            self.port_name = port
+                            self.get_logger().info(f"[PROBE SUCCESS] Verified and connected to ESP32-S3 on {port}")
+                            connected = True
+                            break
+                        else:
+                            conn.close()
                     except Exception:
                         continue
             
