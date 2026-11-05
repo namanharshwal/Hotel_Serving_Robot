@@ -15,6 +15,8 @@ import serial.tools.list_ports
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState, BatteryState, Range
@@ -39,7 +41,7 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('publish_tf', True)
         self.declare_parameter('odom_frame_id', 'odom')
         self.declare_parameter('base_frame_id', 'base_footprint')
-        self.declare_parameter('cmd_timeout', 0.6)           # Watchdog timeout in seconds
+        self.declare_parameter('cmd_timeout', 1.0)           # Watchdog timeout in seconds
         self.declare_parameter('simulate_hardware', False)   # Auto-fallback if port not present
         self.declare_parameter('max_linear_velocity', 1.2)   # Max linear velocity m/s
         self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s
@@ -57,6 +59,8 @@ class ESP32HardwareBridge(Node):
         self.sim_mode = self.get_parameter('simulate_hardware').get_parameter_value().bool_value
         self.max_v = self.get_parameter('max_linear_velocity').get_parameter_value().double_value
         self.max_w = self.get_parameter('max_angular_velocity').get_parameter_value().double_value
+
+        self.cb_group = ReentrantCallbackGroup()
 
         self.get_logger().info("==================================================================")
         self.get_logger().info("INITIALIZING NAMMY ROBOT ESP32-S3 HARDWARE BRIDGE")
@@ -101,7 +105,7 @@ class ESP32HardwareBridge(Node):
         self.tf_broadcaster = TransformBroadcaster(self)
 
         # Subscribers
-        self.cmd_sub = self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10)
+        self.cmd_sub = self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10, callback_group=self.cb_group)
 
         # Serial Communication
         self.serial_conn = None
@@ -110,8 +114,8 @@ class ESP32HardwareBridge(Node):
         self.init_serial()
 
         # Timers
-        self.loop_timer = self.create_timer(1.0 / self.publish_rate, self.control_loop)
-        self.heartbeat_timer = self.create_timer(0.5, self.send_heartbeat)
+        self.loop_timer = self.create_timer(1.0 / self.publish_rate, self.control_loop, callback_group=self.cb_group)
+        self.heartbeat_timer = self.create_timer(0.5, self.send_heartbeat, callback_group=self.cb_group)
 
     def init_serial(self):
         """Connect to ESP32-S3 serial port with graceful simulation fallback."""
@@ -447,11 +451,14 @@ class ESP32HardwareBridge(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = ESP32HardwareBridge()
+    executor = MultiThreadedExecutor(num_threads=2)
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         node.get_logger().info("Shutting down ESP32 hardware bridge...")
     finally:
+        executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
 
