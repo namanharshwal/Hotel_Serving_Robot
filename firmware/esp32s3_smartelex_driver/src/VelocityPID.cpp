@@ -3,7 +3,7 @@
 VelocityPID::VelocityPID(float kp, float ki, float kd, float kff)
     : _kp(kp), _ki(ki), _kd(kd), _kff(kff),
       _integral(0.0f), _prev_error(0.0f), _filtered_derivative(0.0f),
-      _output_limit(1023.0f), _integral_limit(30.0f) {}
+      _output_limit(1023.0f), _integral_limit(120.0f) {}
 
 float VelocityPID::compute(float target_rad_s, float actual_rad_s, float dt) {
     if (dt <= 0.0f) return 0.0f;

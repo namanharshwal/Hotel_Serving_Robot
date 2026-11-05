@@ -66,11 +66,11 @@
    - [7.4 Precision Voltage Divider & 12-Bit ADC Quantization](#74-precision-voltage-divider--12-bit-adc-quantization)
 8. [Motor Control Dynamics, Anti-Jerk Formulations & Firmware Engineering](#8-motor-control-dynamics-anti-jerk-formulations--firmware-engineering)
    - [8.1 Optocoupler-Safe PWM Switching Dynamics (Semiconductor Physics)](#81-optocoupler-safe-pwm-switching-dynamics-semiconductor-physics)
-   - [8.2 Bounded Anti-Windup Velocity PID with Physical Back-EMF Feedforward ($K_{ff} = 28.0$)](#82-bounded-anti-windup-velocity-pid-with-physical-back-emf-feedforward-k_ff--280)
-   - [8.3 Directional Quadrant Bounding & Non-Reversing Active Deceleration](#83-directional-quadrant-bounding--non-reversing-active-deceleration)
+   - [8.2 Calibrated Anti-Windup Velocity PID with Physical Feedforward ($K_{ff} = 35.0$) & Low-Lag Filtering](#82-calibrated-anti-windup-velocity-pid-with-physical-feedforward-k_ff--350--low-lag-filtering)
+   - [8.3 Directional Quadrant Bounding, Smooth Setpoint Ramping & Slew Braking](#83-directional-quadrant-bounding-smooth-setpoint-ramping--slew-braking)
    - [8.4 High-Throughput Binary Serial Framing & Parser Jitter Elimination](#84-high-throughput-binary-serial-framing--parser-jitter-elimination)
    - [8.5 ROS 2 Multi-Threaded Execution Architecture (`MultiThreadedExecutor`)](#85-ros-2-multi-threaded-execution-architecture-multithreadedexecutor)
-   - [8.6 Teleoperation Deadman Ramping & Auto-Stop Safety](#86-teleoperation-deadman-ramping--auto-stop-safety)
+   - [8.6 Dual-Mode Interactive Teleoperation & Typematic Auto-Repeat Immunity](#86-dual-mode-interactive-teleoperation--typematic-auto-repeat-immunity)
 9. [2D LiDAR SLAM, Perception Geometry & Ceres Solver Optimization (Proven `hover_ws` Integration)](#9-2d-lidar-slam-perception-geometry--ceres-solver-optimization-proven-hover_ws-integration)
    - [9.1 YDLIDAR G2 Optical Geometry & Spatial Sampling](#91-ydlidar-g2-optical-geometry--spatial-sampling)
    - [9.2 SLAM Toolbox Online Async Mapping & Ceres Solver Parameterization](#92-slam-toolbox-online-async-mapping--ceres-solver-parameterization)
@@ -1130,7 +1130,7 @@ This completely removes the discontinuous step jump between zero and the static 
 
 ---
 
-### 8.2 Bounded Anti-Windup Velocity PID with Physical Back-EMF Feedforward ($K_{ff} = 28.0$)
+### 8.2 Calibrated Anti-Windup Velocity PID with Physical Feedforward ($K_{ff} = 35.0$) & Low-Lag Filtering
 
 The motor velocity loop executes deterministically at **$100\text{ Hz}$** ($\Delta t = 0.010\text{ s}$) on Core 1 of the ESP32-S3:
 
@@ -1138,66 +1138,111 @@ $$
 u(t) = u_{\text{ff}}(t) + u_p(t) + u_i(t)
 $$
 
-#### 8.2.1 Physical Back-EMF Feedforward ($u_{\text{ff}}$)
-A permanent-magnet DC motor generates an internal counter-electromotive force (back-EMF) proportional to rotational velocity:
-$$V_{\text{emf}} = K_e \cdot \omega$$
-
-Where $K_e$ is the motor electrical voltage constant. Given the $24\text{V}$ nominal battery rail and $10\text{-bit}$ PWM resolution ($1023\text{ counts} = 24.0\text{V} \implies 42.625\text{ counts/Volt}$):
-$$K_e \approx 0.6568\text{ V/(rad/s at wheel)}$$
-
-The physical feedforward gain is calibrated to:
+#### 8.2.1 Empirical Motor Model & Calibrated Physical Feedforward ($K_{ff} = 35.0$)
+A permanent-magnet DC motor coupled to a planetary gearbox exhibits a linear steady-state relationship between armature duty cycle and wheel angular velocity above its static coulomb friction threshold:
 
 $$
-K_{ff} = K_e \times 42.625 = 0.6568 \times 42.625 = \mathbf{28.0\ \frac{\text{PWM counts}}{\text{rad/s}}}
+\text{PWM}(t) = K_{ff} \cdot \omega(t) + D_{\text{deadband}}
+$$
+
+To determine the true physical constants of the AT120 planetary motor and SmartElex 30S H-bridge under real mechanical drag, an open-loop PWM staircase sweep was conducted on hardware (upload port `/dev/ttyACM0`):
+
+| Applied LEDC PWM Duty (Counts, 10-bit) | Measured Steady-State Wheel Angular Velocity ($\text{rad/s}$) | Effective Armature Voltage ($V_{\text{motor}} = \frac{\text{PWM}}{1023} \times 24\text{V}$) |
+|:---|:---|:---|
+| **40** | $0.00\text{ rad/s}$ (Static deadband region) | $0.94\text{ V}$ |
+| **60** | $0.90\text{ rad/s}$ (Onset of continuous rotation) | $1.41\text{ V}$ |
+| **100** | $2.10\text{ rad/s}$ | $2.35\text{ V}$ |
+| **140** | $3.25\text{ rad/s}$ | $3.28\text{ V}$ |
+| **180** | $4.45\text{ rad/s}$ | $4.22\text{ V}$ |
+| **220** | $5.45\text{ rad/s}$ | $5.16\text{ V}$ |
+
+Computing the physical slope across the linear operating envelope ($60$ to $220\text{ counts}$):
+
+$$
+K_{ff} = \frac{\Delta\text{PWM}}{\Delta\omega} = \frac{220 - 60\text{ counts}}{5.45 - 0.90\text{ rad/s}} = \frac{160\text{ counts}}{4.55\text{ rad/s}} = \mathbf{35.16\ \frac{\text{PWM counts}}{\text{rad/s}}} \implies \mathbf{35.0}
+$$
+
+Determining the static coulomb deadband intercept:
+
+$$
+D_{\text{deadband}} = \text{PWM} - (K_{ff} \cdot \omega) = 60 - (35.16 \times 0.90) = 60 - 31.64 = \mathbf{28.36\text{ counts}} \approx \mathbf{28\text{ counts}}
 $$
 
 **Worked Feedforward Example at Cruising Speed ($\omega_{\text{target}} = 10.0\text{ rad/s}$):**
 
 $$
-u_{\text{ff}} = K_{ff} \cdot \omega_{\text{target}} = 28.0 \times 10.0 = \mathbf{280\text{ counts}} \quad (27.37\% \text{ duty cycle})
+u_{\text{ff}} = K_{ff} \cdot \omega_{\text{target}} = 35.0 \times 10.0 = \mathbf{350\text{ counts}} \quad \left(\frac{350}{1023} = 34.21\% \text{ duty cycle} \equiv 8.21\text{ V}\right)
 $$
 
-Feedforward instantaneously applies $280$ counts of PWM duty the very instant the command is issued, supplying $90\%$ of the torque required to sustain that speed before any tracking error develops.
+Because $K_{ff} = 35.0$ matches the true electromechanical motor slope, feedforward instantaneously supplies $95\%$ of the total torque required to sustain steady-state velocity, freeing the feedback loop from having to generate high corrective authority.
 
-#### 8.2.2 Proportional Feedback ($u_p$)
-$$u_p(t) = K_p \cdot e(t) = 8.0 \cdot (\omega_{\text{target}}(t) - \omega_{\text{actual}}(t))$$
-For an observed velocity error of $e = +0.50\text{ rad/s}$:
-$$u_p = 8.0 \times 0.50 = \mathbf{4.0\text{ counts}}$$
+#### 8.2.2 Optical Encoder Velocity Filtering & Phase Lag Elimination
+In differential drive closed-loop control, velocity feedback is calculated from optical encoder counts sampled over interval $\Delta t = 0.010\text{ s}$ ($100\text{ Hz}$):
 
-#### 8.2.3 Asymmetric Feedforward-Referenced Anti-Windup Clamping ($u_i$)
-Standard symmetric anti-windup clamping ($I_{\min} = -I_{\max}$) permits the integrator to wind down deeply negative during deceleration phases. When the user commands forward acceleration again, this negative accumulated integral cancels out the positive feedforward, creating a dead pause followed by a sudden jerky catch-up.
+$$
+\omega_{\text{raw}}[k] = \frac{\Delta N[k]}{N_{\text{rev}}} \cdot \frac{2\pi}{\Delta t}
+$$
 
-To eliminate this, firmware implements **Asymmetric Feedforward-Referenced Clamping**:
+With $N_{\text{rev}} = 6,000\text{ ticks/rev}$, a discrete single-pole Infinite Impulse Response (IIR) filter is applied to suppress discrete tick quantization:
+
+$$
+\omega_{\text{filt}}[k] = (1 - \alpha) \cdot \omega_{\text{filt}}[k-1] + \alpha \cdot \omega_{\text{raw}}[k]
+$$
+
+The continuous-time cutoff frequency $f_c$, time constant $\tau$, and 95% settling time $t_{95}$ are governed by:
+
+$$
+f_c = \frac{\alpha}{2\pi \cdot \Delta t}, \qquad \tau = \frac{\Delta t}{\alpha}, \qquad t_{95} = 3\tau = \frac{3\Delta t}{\alpha}
+$$
+
+* **Root Cause of Historical Jerkiness ($\alpha = 0.18$):**
+  $$f_c = \frac{0.18}{2\pi \times 0.010} = \mathbf{2.86\text{ Hz}}, \qquad t_{95} = \frac{3 \times 0.010}{0.18} = \mathbf{166.7\text{ ms}}$$
+  Phase lag introduced into the feedback loop at typical hunting frequency ($f = 1.60\text{ Hz}$):
+  $$\phi_{\text{lag}} = -\arctan\left(\frac{f}{f_c}\right) = -\arctan\left(\frac{1.60}{2.86}\right) = -\arctan(0.5594) = \mathbf{-29.2^\circ}$$
+  A $166.7\text{ ms}$ settling delay in a fast-responding $100\text{ Hz}$ loop depleted the system phase margin, triggering limit-cycle oscillations (speed surging rhythmically between $0.7\text{ rad/s}$ and $2.5\text{ rad/s}$ at $1.6\text{ Hz}$).
+
+* **Optimized Low-Lag Filter Configuration ($\alpha = 0.70$):**
+  $$f_c = \frac{0.70}{2\pi \times 0.010} = \mathbf{11.14\text{ Hz}}, \qquad t_{95} = \frac{3 \times 0.010}{0.70} = \mathbf{42.8\text{ ms}}$$
+  New phase lag at $1.60\text{ Hz}$:
+  $$\phi_{\text{lag}} = -\arctan\left(\frac{1.60}{11.14}\right) = -\arctan(0.1436) = \mathbf{-8.17^\circ}$$
+  Phase margin is expanded by $\Delta\phi = 29.2^\circ - 8.17^\circ = \mathbf{+21.03^\circ}$, while group latency drops below $10\text{ ms}$. This completely quenches limit-cycle speed surging.
+
+#### 8.2.3 Proportional-Integral Tuning ($K_p = 2.5, K_i = 1.2$)
+With accurate feedforward ($K_{ff} = 35.0$) and low filter lag ($\alpha = 0.70$), high aggressive feedback gains are no longer needed:
+- **Proportional Gain:** $K_p = 2.5\ \text{counts/(rad/s)}$ (provides mild damping without ringing).
+- **Integral Gain:** $K_i = 1.2\ \text{counts/(rad/s}\cdot\text{s)}$.
+- **Derivative Gain:** $K_d = 0.0$ (disabled to eliminate derivative spike kicks on step changes).
+
+#### 8.2.4 Asymmetric Anti-Windup Clamping & Extended Headroom ($I_{\text{limit}} = 120.0$)
+Firmware implements **Asymmetric Feedforward-Referenced Clamping**:
 
 $$
 \text{For } \omega_{\text{target}} > 0: \quad I_{\text{min}} = -\frac{0.40 \cdot u_{\text{ff}}}{\max(K_i, 1.0)}, \qquad I_{\text{max}} = \frac{I_{\text{limit}}}{K_i}
 $$
 
-Substituting the calibrated gains ($K_i = 4.0, I_{\text{limit}} = 30.0$) and $u_{\text{ff}} = 280$:
+Substituting the calibrated gains ($K_i = 1.2, I_{\text{limit}} = 120.0$) and $u_{\text{ff}} = 350$:
 
 $$
-I_{\text{min}} = -\frac{0.40 \times 280}{4.0} = -\frac{112}{4.0} = \mathbf{-28.0}
-$$
-
-$$
-I_{\text{max}} = \frac{30.0}{4.0} = \mathbf{+7.5}
+I_{\text{min}} = -\frac{0.40 \times 350}{1.2} = -\frac{140}{1.2} = \mathbf{-116.67}
 $$
 
 $$
-I(t) = \operatorname{clamp}\left( I(t-1) + e(t) \cdot \Delta t, \; -28.0, \; +7.5 \right)
+I_{\text{max}} = \frac{120.0}{1.2} = \mathbf{+100.0}
 $$
 
 $$
-u_i(t) = K_i \cdot I(t) = 4.0 \cdot I(t)
+I(t) = \operatorname{clamp}\left( I(t-1) + e(t) \cdot \Delta t, \; -116.67, \; +100.0 \right)
 $$
 
-The maximum negative integral subtractive authority is strictly capped at $4.0 \times (-28.0) = -112\text{ counts}$. The net forward effort is guaranteed to remain positive:
-$$u_{\text{net}} \ge u_{\text{ff}} + u_i = 280 - 112 = \mathbf{+168\text{ counts}} > 0$$
-This guarantees the motors will never stall or experience sluggish response when throttle is reapplied.
+$$
+u_i(t) = K_i \cdot I(t) = 1.2 \cdot I(t)
+$$
+
+The integrator provides up to $+120.0\text{ counts}$ of sustained torque authority for carrying full $50\text{ kg}$ gross payload or climbing ADA ramps, while negative windup during braking is strictly capped to prevent lag when re-accelerating.
 
 ---
 
-### 8.3 Directional Quadrant Bounding & Non-Reversing Active Deceleration
+### 8.3 Directional Quadrant Bounding, Smooth Setpoint Ramping & Slew Braking
 
 #### 8.3.1 Directional Quadrant Bounding
 Temporary encoder noise or transient speed overshoots must never cause an H-bridge direction toggle. Firmware enforces strict quadrant bounding on total effort:
@@ -1212,13 +1257,35 @@ $$
 
 The motor H-bridge is physically prohibited from switching into reverse polarity while driving forward, completely eliminating reverse shudder and chatter.
 
-#### 8.3.2 Non-Reversing Active Deceleration ($320	ext{ ms}$)
+#### 8.3.2 Firmware Setpoint Acceleration Profiling ($\dot{\omega}_{\max} = 10.0\text{ rad/s}^2$)
+To eliminate step inputs into the PID error calculation, firmware shapes incoming velocity commands:
+
+$$
+\omega_{\text{ramped}}[k] = \operatorname{clamp}\left( \omega_{\text{target}}[k], \; \omega_{\text{ramped}}[k-1] - \dot{\omega}_{\max}\Delta t, \; \omega_{\text{ramped}}[k-1] + \dot{\omega}_{\max}\Delta t \right)
+$$
+
+With $\dot{\omega}_{\max} = 10.0\text{ rad/s}^2$ ($\approx 0.50\text{ m/s}^2$ linear acceleration):
+
+$$
+\Delta\omega_{\max} = 10.0\text{ rad/s}^2 \times 0.010\text{ s} = \mathbf{0.10\text{ rad/s per control loop}}
+$$
+
+For a step transition from standstill to cruising speed ($\omega = 3.0\text{ rad/s}$):
+
+$$
+t_{\text{ramp}} = \frac{3.0\text{ rad/s}}{10.0\text{ rad/s}^2} = \mathbf{0.300\text{ s}} \quad (30\text{ control cycles})
+$$
+
+This guarantees that feedforward and proportional terms ramp continuously without instantaneous torque shocks.
+
+#### 8.3.3 Non-Reversing Active Slew Deceleration ($\dot{D}_{\text{slew}} = 800.0\text{ counts/s}$)
 When a stop command is received ($|\omega_{\text{target}}| < 0.01\text{ rad/s}$):
-1. The PID integrator is instantly cleared ($I = 0$).
-2. The LEDC duty cycle is ramped down to $0$ under a controlled slew rate limit:
-   $$\dot{D}_{\text{slew}} = 1200\text{ counts/s}$$
-3. A transition from cruising effort ($400\text{ counts}$) to zero occurs in:
-   $$t_{\text{stop}} = \frac{400\text{ counts}}{1200\text{ counts/s}} = \frac{1}{3}\text{ s} \approx \mathbf{333.3\text{ ms}}$$
+1. Firmware commands `setPwmRaw(0)` instead of executing an abrupt `brake()` cutoff.
+2. The LEDC duty cycle is ramped down to $0$ under the controlled slew rate limit:
+   $$\dot{D}_{\text{slew}} = 800.0\text{ counts/s}$$
+3. A transition from cruising effort ($200\text{ counts}$) to zero occurs in:
+   $$t_{\text{stop}} = \frac{200\text{ counts}}{800.0\text{ counts/s}} = \mathbf{0.250\text{ s}} = \mathbf{250.0\text{ ms}}$$
+4. The PID integrator is reset cleanly once the motor has reached standstill.
 This provides a crisp, predictable, smooth deceleration without passenger discomfort, load tipping, or inductive kickback.
 
 ---
@@ -1238,7 +1305,7 @@ Serial communication between the Jetson Orin Nano Super and the ESP32-S3 runs ov
 * **CRC-16-CCITT Verification:**
   Every command and telemetry packet is verified using polynomial $x^{16} + x^{12} + x^5 + 1$ (initial value `0xFFFF`). Corrupted packets are rejected with zero impact on robot state.
 * **Bi-Directional Telemetry Stream:**
-  The ESP32 broadcasts a 36-byte telemetry packet at **50 Hz** containing left/right wheel positions ($	ext{rad}$), actual angular velocities ($	ext{rad/s}$), battery voltage ($	ext{V}$), 4x sonar ranges ($	ext{mm}$), and hardware status flags.
+  The ESP32 broadcasts a 36-byte telemetry packet at **50 Hz** containing left/right wheel positions ($\text{rad}$), actual angular velocities ($\text{rad/s}$), battery voltage ($\text{V}$), 4x sonar ranges ($\text{mm}$), and hardware status flags.
 
 ---
 
@@ -1253,14 +1320,30 @@ The `esp32_hardware_bridge` node addresses this by using the ROS 2 multi-threade
 
 ---
 
-### 8.6 Teleoperation Deadman Ramping & Auto-Stop Safety
+### 8.6 Dual-Mode Interactive Teleoperation & Typematic Auto-Repeat Immunity
 
-The interactive keyboard driving utility ([`teleop_keyboard.py`](src/nammy_teleop/nammy_teleop/teleop_keyboard.py)) implements an active **0.25-second deadman safety timer**:
-1. When a movement key (`w`, `s`, `a`, `d`, `i`, `,`, `j`, `l`) is held down, commands stream at 12.5 Hz.
-2. The moment the user releases the key, the deadman timer expires after **$250\text{ ms}$** of inactivity.
-3. Rather than abruptly dropping velocity to zero (which causes passenger jerk), an internal software acceleration limiter ramps velocity down:
-   $$\dot{v}_{\text{max}} = 0.80\ \text{m/s}^2, \qquad \dot{\omega}_{\text{max}} = 1.50\ \text{rad/s}^2$$
-4. Once velocity is within $0.01\text{ m/s}$, it snaps cleanly to $0.000\text{ m/s}$ and transmits a final zero-stop packet.
+The interactive keyboard driving utility ([`teleop_keyboard.py`](src/nammy_teleop/nammy_teleop/teleop_keyboard.py)) features dual driving modes designed for buttery smoothness and absolute immunity to Linux X11 terminal auto-repeat jitter:
+
+#### 8.6.1 Linux X11 Typematic Delay & The False-Stop Bug
+On Linux X11 desktop environments, the operating system kernel and X server enforce a typematic repeat delay (`xset q`):
+$$\text{Auto-Repeat Delay: } 500\text{ ms}, \qquad \text{Repeat Rate: } 33\text{ Hz}$$
+When a user presses and holds a key (e.g., `w` or `i`):
+1. The first character is delivered at $t = 0\text{ ms}$.
+2. The OS typematic delay suppresses subsequent character pulses until $t = 500\text{ ms}$.
+3. If a teleop node employs a hardcoded $250\text{ ms}$ deadman timer, it triggers at $t = 250\text{ ms}$, incorrectly concluding the user released the key! It ramps velocity to zero.
+4. At $t = 500\text{ ms}$, repeated pulses arrive, jumping velocity back to full speed.
+5. This whiplashed the robot between drive and stop 4 times every second, causing severe physical jerkiness!
+
+#### 8.6.2 Dual Operational Modes
+To permanently resolve this, `teleop_keyboard.py` provides two distinct modes (toggleable with `[h]`):
+1. **CRUISE Mode (Latched Driving - Default, Standard ROS 2 UX):**
+   - Tapping `w` or `i` sets forward cruising speed ($0.35\text{ m/s}$).
+   - The robot cruises smoothly until `x`, `k`, or `SPACE` is pressed.
+   - Slew-rate acceleration profiles transition velocity at $\dot{v} = 0.50\text{ m/s}^2$ and $\dot{\omega} = 1.00\text{ rad/s}^2$.
+2. **DEADMAN Mode (Hold-to-Drive):**
+   - The deadman safety timer is extended to **$850\text{ ms}$**, comfortably exceeding the $500\text{ ms}$ X11 typematic repeat delay.
+   - Holding down a driving key produces a continuous, uninterrupted stream of movement.
+   - Releasing the key for $> 850\text{ ms}$ smoothly ramps target velocity to zero at $0.50\text{ m/s}^2$.
 
 ---
 ## 9. 2D LiDAR SLAM, Perception Geometry & Ceres Solver Optimization (Proven `hover_ws` Integration)

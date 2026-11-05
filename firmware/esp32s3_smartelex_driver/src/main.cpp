@@ -57,8 +57,8 @@ SmartElex30S motor_right(PIN_MOTOR_R_PWM, PIN_MOTOR_R_DIR, 1, false);
 EncoderReader enc_left(PIN_ENC_L_A, PIN_ENC_L_B, true);
 EncoderReader enc_right(PIN_ENC_R_A, PIN_ENC_R_B, true);  // Inverted for mirrored axle
 
-VelocityPID pid_left(8.0f, 4.0f, 0.0f, 28.0f);
-VelocityPID pid_right(8.0f, 4.0f, 0.0f, 28.0f);
+VelocityPID pid_left(2.5f, 1.2f, 0.0f, 35.0f);
+VelocityPID pid_right(2.5f, 1.2f, 0.0f, 35.0f);
 
 BatteryMonitor battery(PIN_BATT_ADC, 11.0f);
 PacketProtocol protocol(Serial);
@@ -235,10 +235,17 @@ void loop() {
         float actual_w_l = enc_left.getVelocityRadS();
         float actual_w_r = enc_right.getVelocityRadS();
 
+        static float ramped_target_l = 0.0f;
+        static float ramped_target_r = 0.0f;
+
         if (estop_active) {
+            ramped_target_l = 0.0f;
+            ramped_target_r = 0.0f;
             motor_left.emergencyStop();
             motor_right.emergencyStop();
         } else if (manual_pwm_mode) {
+            ramped_target_l = 0.0f;
+            ramped_target_r = 0.0f;
             motor_left.setPwmRaw(manual_pwm_l);
             motor_right.setPwmRaw(manual_pwm_r);
         } else {
@@ -257,20 +264,38 @@ void loop() {
                 eff_target_r = max(0.0f, eff_target_r);
             }
 
-            // Closed-loop PID velocity control
-            if (abs(eff_target_l) < 0.01f) {
-                motor_left.brake();
+            // Smooth setpoint acceleration ramping (eliminates step inputs into PID loop)
+            const float MAX_ACCEL_RAD_S2 = 10.0f;  // ~0.50 m/s^2 linear acceleration limit
+            float max_step = MAX_ACCEL_RAD_S2 * dt;
+
+            if (eff_target_l > ramped_target_l) {
+                ramped_target_l = min(eff_target_l, ramped_target_l + max_step);
+            } else if (eff_target_l < ramped_target_l) {
+                ramped_target_l = max(eff_target_l, ramped_target_l - max_step);
+            }
+
+            if (eff_target_r > ramped_target_r) {
+                ramped_target_r = min(eff_target_r, ramped_target_r + max_step);
+            } else if (eff_target_r < ramped_target_r) {
+                ramped_target_r = max(eff_target_r, ramped_target_r - max_step);
+            }
+
+            // Closed-loop PID velocity control with smooth deceleration
+            if (abs(ramped_target_l) < 0.02f && abs(eff_target_l) < 0.01f) {
+                ramped_target_l = 0.0f;
+                motor_left.setPwmRaw(0);
                 pid_left.reset();
             } else {
-                float effort_l = pid_left.compute(eff_target_l, actual_w_l, dt);
+                float effort_l = pid_left.compute(ramped_target_l, actual_w_l, dt);
                 motor_left.setPwmRaw((int16_t)effort_l);
             }
 
-            if (abs(eff_target_r) < 0.01f) {
-                motor_right.brake();
+            if (abs(ramped_target_r) < 0.02f && abs(eff_target_r) < 0.01f) {
+                ramped_target_r = 0.0f;
+                motor_right.setPwmRaw(0);
                 pid_right.reset();
             } else {
-                float effort_r = pid_right.compute(eff_target_r, actual_w_r, dt);
+                float effort_r = pid_right.compute(ramped_target_r, actual_w_r, dt);
                 motor_right.setPwmRaw((int16_t)effort_r);
             }
         }

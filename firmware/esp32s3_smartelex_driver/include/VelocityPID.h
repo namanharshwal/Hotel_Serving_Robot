@@ -12,7 +12,7 @@
 
 class VelocityPID {
 public:
-    VelocityPID(float kp = 45.0f, float ki = 110.0f, float kd = 1.2f, float kff = 42.0f);
+    VelocityPID(float kp = 2.5f, float ki = 1.2f, float kd = 0.0f, float kff = 35.0f);
 
     // Compute control output [-output_limit, +output_limit]
     float compute(float target_rad_s, float actual_rad_s, float dt);
