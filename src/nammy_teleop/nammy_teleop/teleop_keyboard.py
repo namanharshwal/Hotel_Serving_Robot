@@ -7,6 +7,7 @@ Accepts both WASD keys, standard ROS (IJKL) keys, and arrow keys.
 
 import os
 import sys
+import time
 import select
 import termios
 import tty

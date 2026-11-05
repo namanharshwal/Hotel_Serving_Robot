@@ -39,7 +39,7 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('publish_tf', True)
         self.declare_parameter('odom_frame_id', 'odom')
         self.declare_parameter('base_frame_id', 'base_footprint')
-        self.declare_parameter('cmd_timeout', 0.3)           # Watchdog timeout in seconds
+        self.declare_parameter('cmd_timeout', 0.6)           # Watchdog timeout in seconds
         self.declare_parameter('simulate_hardware', False)   # Auto-fallback if port not present
         self.declare_parameter('max_linear_velocity', 1.2)   # Max linear velocity m/s
         self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s

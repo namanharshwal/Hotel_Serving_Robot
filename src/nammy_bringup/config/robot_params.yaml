@@ -21,7 +21,7 @@ esp32_hardware_bridge:
     base_frame_id: "base_footprint"
     publish_tf: true
 
-    cmd_timeout: 0.35          # Seconds before safety stopping motors
+    cmd_timeout: 0.60          # Seconds before safety stopping motors
     simulate_hardware: false   # Auto-fallback to simulation if USB serial disconnected
     max_linear_velocity: 1.2   # Max linear velocity (m/s)
     max_angular_velocity: 2.5  # Max angular velocity (rad/s)

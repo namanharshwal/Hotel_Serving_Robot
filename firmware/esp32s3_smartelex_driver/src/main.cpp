@@ -46,7 +46,7 @@
 // Status LED (Blinks on heartbeat)
 #define PIN_STATUS_LED        2
 
-#define WATCHDOG_TIMEOUT_MS   300
+#define WATCHDOG_TIMEOUT_MS   600
 
 // ==============================================================================
 // GLOBAL HARDWARE DRIVER INSTANCES
@@ -57,8 +57,8 @@ SmartElex30S motor_right(PIN_MOTOR_R_PWM, PIN_MOTOR_R_DIR, 1, false);
 EncoderReader enc_left(PIN_ENC_L_A, PIN_ENC_L_B, true);
 EncoderReader enc_right(PIN_ENC_R_A, PIN_ENC_R_B, true);  // Inverted for mirrored axle
 
-VelocityPID pid_left(25.0f, 15.0f, 0.0f, 45.0f);
-VelocityPID pid_right(25.0f, 15.0f, 0.0f, 45.0f);
+VelocityPID pid_left(16.0f, 8.0f, 0.0f, 49.0f);
+VelocityPID pid_right(16.0f, 8.0f, 0.0f, 49.0f);
 
 BatteryMonitor battery(PIN_BATT_ADC, 11.0f);
 PacketProtocol protocol(Serial);
