@@ -1,0 +1,59 @@
+# ==============================================================================
+# SLAM Toolbox Online Async Mapping Configuration for Nammy Robot Platform
+# Ported directly from proven, working hover_ws production configuration
+#
+# Maintainer: Naman Harshwal <namanharshwal@gmail.com>
+# Copyright (c) 2026 Naman Harshwal. All rights reserved.
+# ==============================================================================
+
+slam_toolbox:
+  ros__parameters:
+
+    # Frame Identifiers
+    odom_frame: odom                    # Wheel/hardware odometry frame
+    map_frame: map                      # SLAM global reference frame
+    base_frame: base_footprint          # Robot footprint frame at ground level
+    scan_topic: /scan                   # LaserScan topic published by YDLIDAR G2
+    use_sim_time: false
+
+    # Mapping Operation Mode
+    mode: mapping                       # Online asynchronous mapping mode
+    map_update_interval: 1.0            # Interval in seconds to update /map topic
+    transform_publish_period: 0.02      # 50 Hz map -> odom TF broadcast
+    resolution: 0.05                    # 5 cm per occupancy grid pixel
+    min_laser_range: 0.10               # Minimum laser range filter (10 cm)
+    max_laser_range: 16.0               # Maximum laser range limit (16 m)
+    minimum_travel_distance: 0.20       # Keyframe addition travel distance (20 cm)
+    minimum_travel_heading: 0.10        # Keyframe addition heading rotation (~5.7 deg)
+
+    # Loop Closure Constraints
+    do_loop_closing: true               # Enable graph loop closure optimization
+    loop_closure_threshold: 0.10        # Matching threshold for loop acceptance
+    loop_closure_search_radius: 10.0    # Node search radius for potential loops (10 m)
+    debug_logging: false                # Non-verbose solver logging
+    throttle_scans: 1                   # Process full 10 Hz scan stream (no skipping)
+    transform_timeout: 0.50             # Generous TF lookup timeout for async executor
+    map_start_at_dock: false
+    map_start_pose: [0.0, 0.0, 0.0]
+
+    # QoS Profile matching YDLIDAR /scan streaming
+    qos_scan:
+      reliability: best_effort
+      history: keep_last
+      depth: 5
+      durability: volatile
+
+    # Correlation Matcher Parameters (tuned for YDLIDAR 360-degree scan)
+    correlation_search_space_dimension: 0.50   # Scan matching window (50 cm)
+    correlation_search_space_resolution: 0.01  # Fine search grid resolution (1 cm)
+    correlation_search_space_smear_deviation: 0.10
+    loop_search_space_dimension: 8.00          # Loop detection window (8 m)
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+    distance_variance_penalty: 0.50            # Penalize odometry translation errors
+    angle_variance_penalty: 1.00               # Penalize heading drift
+    fine_search_angle_offset: 0.00349          # ~0.2 deg fine angle precision
+    coarse_search_angle_offset: 0.349          # ~20 deg coarse search
+    coarse_angle_resolution: 0.0349            # ~2 deg coarse angle resolution
+    minimum_angular_criteria: 0.01             # Minimum turn for node addition
+    use_response_expansion: true               # Enhanced convergence in large spaces

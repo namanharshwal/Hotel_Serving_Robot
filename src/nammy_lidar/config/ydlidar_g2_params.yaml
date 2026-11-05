@@ -1,23 +1,41 @@
+# ==============================================================================
+# YDLIDAR G2 Driver Parameters for Nammy Robot Platform
+# Configured and validated from proven hover_ws production configuration
+#
+# Maintainer: Naman Harshwal <namanharshwal@gmail.com>
+# Copyright (c) 2026 Naman Harshwal. All rights reserved.
+# ==============================================================================
+
 ydlidar_ros2_driver_node:
   ros__parameters:
-    port: /dev/ydlidar
-    frame_id: laser
-    ignore_array: ""
-    baudrate: 230400
-    lidar_type: 1
-    device_type: 6        # 6 = YDLIDAR G2
-    sample_rate: 9
+    port: /dev/ydlidar          # Symlinked from /dev/ttyUSB0 (CP2102)
+    frame_id: laser_frame       # Matches nammy_robot.urdf.xacro laser_frame link
+    ignore_array: ""            # Full 360-degree panoramic field of view
+    baudrate: 230400            # YDLIDAR G2 standard baud rate
+    lidar_type: 1               # Triangulation LiDAR (G2 variant)
+    device_type: 0              # 0 = Serial device
+    isSingleChannel: false      # Multi-beam bi-directional communication
+    intensity: false            # High-speed range mapping without intensity overhead
+    intensity_bit: 0
+    sample_rate: 9              # ~2880 points/revolution
     abnormal_check_count: 4
-    fixed_resolution: true
-    reversion: false
-    inverted: true
-    auto_reconnect: true
-    isSingleChannel: false
-    intensity: false
-    support_motor_dtr: true
-    angle_max: 180.0
-    angle_min: -180.0
-    range_max: 12.0
-    range_min: 0.12
-    frequency: 10.0
-    invalid_range_is_inf: false
+    fixed_resolution: true      # Consistent angular resolution across scans
+    reversion: true             # Clockwise angular progression
+    inverted: true              # Upright top chassis mounting orientation
+    auto_reconnect: true        # Automatic serial port recovery upon glitch
+    support_motor_dtr: false     # Hardware DTR motor control line bypass
+    angle_max: 180.0            # Full 360-degree scan (+180.0 deg)
+    angle_min: -180.0           # Full 360-degree scan (-180.0 deg)
+    range_max: 16.0             # 16.0m max range limit
+    range_min: 0.01             # 1cm minimum range cutoff
+    frequency: 10.0             # 10.0 Hz scan rotation frequency
+    invalid_range_is_inf: false # Return 0 for out-of-range (SLAM preferred)
+    debug: false                # Non-verbose driver logging
+
+    # QoS Profile tuned for real-time laser scan delivery to SLAM & RViz
+    qos_overrides:
+      /scan:
+        reliability: best_effort
+        history: keep_last
+        depth: 5
+        durability: volatile

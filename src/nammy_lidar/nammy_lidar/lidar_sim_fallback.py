@@ -13,7 +13,7 @@ class LidarSimFallback(Node):
     def __init__(self):
         super().__init__('lidar_sim_fallback')
 
-        self.declare_parameter('frame_id', 'laser')
+        self.declare_parameter('frame_id', 'laser_frame')
         self.declare_parameter('scan_frequency', 10.0)  # 10 Hz
         self.declare_parameter('samples', 360)          # 360 points (1 deg resolution)
         self.declare_parameter('sim_room_radius', 3.5)  # 3.5m simulated room boundary
