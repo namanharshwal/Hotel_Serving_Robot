@@ -2,8 +2,10 @@
 """
 Interactive Terminal Keyboard Teleoperation for Nammy Robot.
 Supports continuous driving, speed increments, and instantaneous emergency stop.
+Accepts both WASD keys, standard ROS (IJKL) keys, and arrow keys.
 """
 
+import os
 import sys
 import select
 import termios
@@ -16,30 +18,47 @@ BANNER = """
 ======================================================================
                NAMMY ROBOT - KEYBOARD TELEOPERATION                  
 ======================================================================
-Control Keys:
-        [w] : Drive Forward
-  [a] : Turn Left     [d] : Turn Right
-        [s] : Drive Backward
-        [x] : Full Stop (Brake)
+Control Keys (WASD or IJKL or Arrows):
+   [w] or [i] : Drive Forward
+   [a] or [j] : Turn Left          [d] or [l] : Turn Right
+   [s] or [,] : Drive Backward
+   [x] or [k] : Full Stop (Brake)
+
+Diagonal / Compound Motion:
+   [u] : Forward + Left           [o] : Forward + Right
+   [m] : Reverse + Left           [.] : Reverse + Right
 
 Speed Modifiers:
-  [q] : Increase Max Linear Speed (+0.05 m/s)
-  [z] : Decrease Max Linear Speed (-0.05 m/s)
-  [e] : Increase Max Angular Speed (+0.10 rad/s)
-  [c] : Decrease Max Angular Speed (-0.10 rad/s)
+   [q] : Increase Max Linear Speed (+0.05 m/s)
+   [z] : Decrease Max Linear Speed (-0.05 m/s)
+   [e] : Increase Max Angular Speed (+0.10 rad/s)
+   [c] : Decrease Max Angular Speed (-0.10 rad/s)
 
 Safety:
-  [SPACE] : EMERGENCY STOP
-  [CTRL+C]: Exit Teleoperation
+   [SPACE] : EMERGENCY STOP (Brake immediately)
+   [CTRL+C]: Exit Teleoperation
 ======================================================================
 """
 
 MOVE_BINDINGS = {
+    # WASD
     'w': (1.0, 0.0),
     's': (-1.0, 0.0),
     'a': (0.0, 1.0),
     'd': (0.0, -1.0),
     'x': (0.0, 0.0),
+    # Standard ROS (IJKL)
+    'i': (1.0, 0.0),
+    ',': (-1.0, 0.0),
+    'j': (0.0, 1.0),
+    'l': (0.0, -1.0),
+    'k': (0.0, 0.0),
+    # Diagonals
+    'u': (1.0, 1.0),
+    'o': (1.0, -1.0),
+    'm': (-1.0, -1.0),
+    '.': (-1.0, 1.0),
+    # Stop
     ' ': (0.0, 0.0),
 }
 
@@ -55,6 +74,17 @@ def get_key(settings, timeout=0.1):
     rlist, _, _ = select.select([sys.stdin], [], [], timeout)
     if rlist:
         key = sys.stdin.read(1)
+        # Handle 3-byte ANSI arrow key escape sequences (ESC [ A/B/C/D)
+        if key == '\x1b':
+            extra = sys.stdin.read(2)
+            if extra == '[A':   # Up arrow
+                key = 'w'
+            elif extra == '[B': # Down arrow
+                key = 's'
+            elif extra == '[D': # Left arrow
+                key = 'a'
+            elif extra == '[C': # Right arrow
+                key = 'd'
     else:
         key = ''
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
@@ -70,9 +100,12 @@ def main():
     angular_speed = 0.75  # rad/s
     target_v = 0.0
     target_w = 0.0
+    domain_id = os.environ.get('ROS_DOMAIN_ID', '0')
 
     print(BANNER)
+    print(f"Network Domain -> ROS_DOMAIN_ID = {domain_id}")
     print(f"Current Speeds -> Linear: {linear_speed:.2f} m/s | Angular: {angular_speed:.2f} rad/s\n")
+    print("Ready! Press motion keys to drive...")
 
     try:
         while rclpy.ok():
