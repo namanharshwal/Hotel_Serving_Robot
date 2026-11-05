@@ -104,16 +104,18 @@ def main():
     current_w = 0.0
     accel_v = 0.8         # m/s^2 maximum smooth acceleration
     accel_w = 1.5         # rad/s^2 maximum smooth angular acceleration
+    last_key_time = 0.0
     domain_id = os.environ.get('ROS_DOMAIN_ID', '0')
 
     print(BANNER)
     print(f"Network Domain -> ROS_DOMAIN_ID = {domain_id}")
     print(f"Current Speeds -> Linear: {linear_speed:.2f} m/s | Angular: {angular_speed:.2f} rad/s\n")
-    print("Ready! Press motion keys to drive...")
+    print("Ready! Press motion keys to drive (Hold key to move, release to stop)...")
 
     try:
         while rclpy.ok():
             key = get_key(settings, timeout=0.08)
+            now = time.time()
             if key == '\x03':  # CTRL+C
                 break
 
@@ -121,6 +123,7 @@ def main():
                 v_mult, w_mult = MOVE_BINDINGS[key]
                 target_v = v_mult * linear_speed
                 target_w = w_mult * angular_speed
+                last_key_time = now
                 print(f"\r[CMD] Linear: {target_v:+.2f} m/s | Angular: {target_w:+.2f} rad/s     ", end='', flush=True)
 
             elif key in SPEED_BINDINGS:
@@ -128,6 +131,13 @@ def main():
                 linear_speed = max(0.05, min(1.20, linear_speed + dv))
                 angular_speed = max(0.10, min(2.50, angular_speed + dw))
                 print(f"\r[SETTINGS] Speed updated -> Linear: {linear_speed:.2f} m/s | Angular: {angular_speed:.2f} rad/s  ", end='', flush=True)
+
+            else:
+                # Key released (no key pressed for > 0.25 seconds): smoothly decelerate target to zero
+                if now - last_key_time > 0.25 and (target_v != 0.0 or target_w != 0.0):
+                    target_v = 0.0
+                    target_w = 0.0
+                    print(f"\r[STOP] Decelerating to stop...                                     ", end='', flush=True)
 
             # Smooth acceleration ramping to prevent jerky stops and starts
             dt = 0.08
@@ -143,6 +153,12 @@ def main():
                 current_w = min(target_w, current_w + dw_max)
             elif target_w < current_w:
                 current_w = max(target_w, current_w - dw_max)
+
+            # Snap to exact zero when near zero
+            if abs(current_v) < 0.01:
+                current_v = 0.0
+            if abs(current_w) < 0.01:
+                current_w = 0.0
 
             twist = Twist()
             twist.linear.x = float(current_v)

@@ -21,8 +21,8 @@ class SmartElex30S {
 public:
     SmartElex30S(uint8_t pwm_pin, uint8_t dir_pin, uint8_t ledc_channel, bool inverted = false);
 
-    // Initialize GPIOs and LEDC hardware PWM timer
-    void begin(uint32_t freq_hz = 20000, uint8_t res_bits = 10);
+    // Initialize GPIOs and LEDC hardware PWM timer (SmartElex 30S rated for up to 490 Hz TTL-PWM)
+    void begin(uint32_t freq_hz = 490, uint8_t res_bits = 10);
 
     // Set normalized motor effort [-1.0f, +1.0f]
     void setEffort(float effort);

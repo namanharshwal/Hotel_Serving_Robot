@@ -3,7 +3,7 @@
 
 SmartElex30S::SmartElex30S(uint8_t pwm_pin, uint8_t dir_pin, uint8_t ledc_channel, bool inverted)
     : _pwm_pin(pwm_pin), _dir_pin(dir_pin), _channel(ledc_channel), _inverted(inverted),
-      _freq(20000), _resolution(10), _max_duty(1023), _deadband(40),
+      _freq(490), _resolution(10), _max_duty(1023), _deadband(40),
       _target_duty(0), _current_duty(0), _slew_rate(3000.0f), _last_update_us(0) {}
 
 void SmartElex30S::begin(uint32_t freq_hz, uint8_t res_bits) {

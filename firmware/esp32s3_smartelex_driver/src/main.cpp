@@ -149,9 +149,9 @@ void on_raw_pwm(const RawPwmPayload &pwm) {
 void setup() {
     Serial.begin(115200);
 
-    // Initialize Motor Drivers at 20 kHz ultrasonic frequency
-    motor_left.begin(20000, 10);
-    motor_right.begin(20000, 10);
+    // Initialize Motor Drivers at SmartElex 30S rated 490 Hz PWM
+    motor_left.begin(490, 10);
+    motor_right.begin(490, 10);
 
     // Initialize Encoders
     enc_left.begin();
@@ -263,6 +263,12 @@ void loop() {
                 pid_left.reset();
             } else {
                 float effort_l = pid_left.compute(eff_target_l, actual_w_l, dt);
+                // Unidirectional quadrant control: Prevent DIR pin chatter during forward or reverse driving
+                if (eff_target_l > 0.02f) {
+                    effort_l = max(0.0f, effort_l);  // Never reverse DIR when commanded forward
+                } else if (eff_target_l < -0.02f) {
+                    effort_l = min(0.0f, effort_l);  // Never forward DIR when commanded reverse
+                }
                 motor_left.setPwmRaw((int16_t)effort_l);
             }
 
@@ -271,6 +277,11 @@ void loop() {
                 pid_right.reset();
             } else {
                 float effort_r = pid_right.compute(eff_target_r, actual_w_r, dt);
+                if (eff_target_r > 0.02f) {
+                    effort_r = max(0.0f, effort_r);  // Never reverse DIR when commanded forward
+                } else if (eff_target_r < -0.02f) {
+                    effort_r = min(0.0f, effort_r);  // Never forward DIR when commanded reverse
+                }
                 motor_right.setPwmRaw((int16_t)effort_r);
             }
         }
