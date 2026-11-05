@@ -17,6 +17,9 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="n
 SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", MODE="0666", GROUP="dialout", RUN+="/bin/sh -c 'test -e /sys/bus/usb-serial/devices/%k/latency_timer && echo 1 > /sys/bus/usb-serial/devices/%k/latency_timer'"
 
 # 5. Waveshare 10.1" Capacitive Touch Display Controller (eGalax / Waveshare Touch HID)
+KERNEL=="event*", ATTRS{idVendor}=="0712", ATTRS{idProduct}=="000a", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
+KERNEL=="event*", ATTRS{id/vendor}=="0712", ATTRS{id/product}=="000a", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
+KERNEL=="event*", ATTRS{name}=="*Waveshare*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
 KERNEL=="event*", ATTRS{idVendor}=="0eef", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
 KERNEL=="event*", ATTRS{name}=="*WaveShare*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
 KERNEL=="event*", ATTRS{name}=="*Byd*", MODE="0666", GROUP="plugdev", SYMLINK+="input/nammy_touchscreen"
