@@ -59,8 +59,8 @@ void EncoderReader::update(float dt) {
     // Instantaneous angular velocity (rad/s)
     float raw_vel_rad_s = ((float)delta_ticks / TICKS_PER_WHEEL_REV) * TWO_PI_F / dt;
 
-    // 1st-order Low-Pass Filter (alpha = 0.4) to eliminate quantization jitter
-    _velocity_rad_s = (0.6f * _velocity_rad_s) + (0.4f * raw_vel_rad_s);
+    // 1st-order Low-Pass Filter (alpha = 0.25) to eliminate quantization jitter
+    _velocity_rad_s = (0.75f * _velocity_rad_s) + (0.25f * raw_vel_rad_s);
     _linear_vel_m_s = _velocity_rad_s * WHEEL_RADIUS_METERS;
 }
 

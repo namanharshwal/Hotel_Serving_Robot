@@ -57,8 +57,8 @@ SmartElex30S motor_right(PIN_MOTOR_R_PWM, PIN_MOTOR_R_DIR, 1, false);
 EncoderReader enc_left(PIN_ENC_L_A, PIN_ENC_L_B, true);
 EncoderReader enc_right(PIN_ENC_R_A, PIN_ENC_R_B, true);  // Inverted for mirrored axle
 
-VelocityPID pid_left(45.0f, 110.0f, 1.2f, 42.0f);
-VelocityPID pid_right(45.0f, 110.0f, 1.2f, 42.0f);
+VelocityPID pid_left(25.0f, 15.0f, 0.0f, 45.0f);
+VelocityPID pid_right(25.0f, 15.0f, 0.0f, 45.0f);
 
 BatteryMonitor battery(PIN_BATT_ADC, 11.0f);
 PacketProtocol protocol(Serial);
@@ -164,8 +164,22 @@ void setup() {
     // Initialize Battery ADC
     battery.begin();
 
-    // Initialize 4-Channel US-100 Ultrasonic Array
+    // Initialize 4-Channel US-100 Ultrasonic Array on Core 0 background task
     sonar.begin();
+    xTaskCreatePinnedToCore(
+        [](void *param) {
+            while (true) {
+                sonar.update();
+                vTaskDelay(pdMS_TO_TICKS(35));
+            }
+        },
+        "sonar_task",
+        4096,
+        NULL,
+        1,
+        NULL,
+        0  // Pin to Core 0 (keeps Core 1 100% dedicated to 100 Hz motion loop)
+    );
 
     // Register Callbacks
     protocol.onCmdVel(on_cmd_vel);
@@ -181,7 +195,7 @@ void setup() {
 }
 
 // ==============================================================================
-// MAIN MEDIATOR LOOP
+// MAIN MEDIATOR LOOP (Deterministic 100 Hz on Core 1)
 // ==============================================================================
 void loop() {
     static uint32_t last_control_us = 0;
@@ -195,10 +209,7 @@ void loop() {
     // 1. Process Serial Packets from Jetson
     protocol.processIncoming();
 
-    // 2. Non-blocking round-robin pinging of 4x US-100 Sonars
-    sonar.update();
-
-    // 3. Safety Watchdog Check
+    // 2. Safety Watchdog Check
     if (now_ms - last_packet_time > WATCHDOG_TIMEOUT_MS) {
         target_rad_s_left = 0.0f;
         target_rad_s_right = 0.0f;

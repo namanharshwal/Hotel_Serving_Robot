@@ -3,8 +3,8 @@
 
 SmartElex30S::SmartElex30S(uint8_t pwm_pin, uint8_t dir_pin, uint8_t ledc_channel, bool inverted)
     : _pwm_pin(pwm_pin), _dir_pin(dir_pin), _channel(ledc_channel), _inverted(inverted),
-      _freq(20000), _resolution(10), _max_duty(1023), _deadband(60),
-      _target_duty(0), _current_duty(0), _slew_rate(4000.0f), _last_update_us(0) {}
+      _freq(20000), _resolution(10), _max_duty(1023), _deadband(40),
+      _target_duty(0), _current_duty(0), _slew_rate(3000.0f), _last_update_us(0) {}
 
 void SmartElex30S::begin(uint32_t freq_hz, uint8_t res_bits) {
     _freq = freq_hz;
@@ -44,7 +44,7 @@ void SmartElex30S::setEffort(float effort) {
 void SmartElex30S::setPwmRaw(int16_t duty) {
     _target_duty = constrain(duty, -_max_duty, _max_duty);
 
-    // Apply slew rate limiting for smooth high-torque transition
+    // Apply slew rate limiting for smooth torque transition
     uint32_t now_us = micros();
     float dt = (now_us - _last_update_us) * 1e-6f;
     _last_update_us = now_us;
@@ -66,33 +66,30 @@ void SmartElex30S::setPwmRaw(int16_t duty) {
 }
 
 void SmartElex30S::applyOutput(int16_t duty) {
-    if (abs(duty) <= 5) {
+    if (duty == 0) {
         writePwm(0);
         return;
     }
 
-    // Deadband friction compensation
-    int16_t effective_duty = duty;
-    if (effective_duty > 0) {
-        effective_duty = map(effective_duty, 1, _max_duty, _deadband, _max_duty);
-    } else {
-        effective_duty = -map(-effective_duty, 1, _max_duty, _deadband, _max_duty);
-    }
-
-    bool forward = (effective_duty >= 0);
+    bool forward = (duty >= 0);
     if (_inverted) {
         forward = !forward;
     }
 
-    uint32_t pwm_val = (uint32_t)abs(effective_duty);
-    pwm_val = min((uint32_t)_max_duty, pwm_val);
+    uint32_t duty_mag = (uint32_t)abs(duty);
+    
+    // Smooth deadband blending: smoothly add static friction offset as duty increases
+    // Eliminates discontinuous step jumps between 0 and deadband
+    float blend = min(1.0f, (float)duty_mag / 80.0f);
+    uint32_t effective_duty = duty_mag + (uint32_t)(_deadband * blend);
+    effective_duty = min((uint32_t)_max_duty, effective_duty);
 
     // SmartElex 30S Pin Logic:
     // DIR HIGH = Forward spin
     // DIR LOW  = Reverse spin
     // PWM      = Motor speed
     digitalWrite(_dir_pin, forward ? HIGH : LOW);
-    writePwm(pwm_val);
+    writePwm(effective_duty);
 }
 
 void SmartElex30S::brake() {
@@ -102,10 +99,7 @@ void SmartElex30S::brake() {
 }
 
 void SmartElex30S::emergencyStop() {
-    _target_duty = 0;
-    _current_duty = 0;
-    writePwm(0);
-    digitalWrite(_dir_pin, LOW);
+    brake();
 }
 
 void SmartElex30S::setInverted(bool inverted) {

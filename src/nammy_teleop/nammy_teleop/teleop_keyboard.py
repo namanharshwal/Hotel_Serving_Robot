@@ -100,6 +100,10 @@ def main():
     angular_speed = 0.75  # rad/s
     target_v = 0.0
     target_w = 0.0
+    current_v = 0.0
+    current_w = 0.0
+    accel_v = 0.8         # m/s^2 maximum smooth acceleration
+    accel_w = 1.5         # rad/s^2 maximum smooth angular acceleration
     domain_id = os.environ.get('ROS_DOMAIN_ID', '0')
 
     print(BANNER)
@@ -125,9 +129,24 @@ def main():
                 angular_speed = max(0.10, min(2.50, angular_speed + dw))
                 print(f"\r[SETTINGS] Speed updated -> Linear: {linear_speed:.2f} m/s | Angular: {angular_speed:.2f} rad/s  ", end='', flush=True)
 
+            # Smooth acceleration ramping to prevent jerky stops and starts
+            dt = 0.08
+            dv_max = accel_v * dt
+            dw_max = accel_w * dt
+
+            if target_v > current_v:
+                current_v = min(target_v, current_v + dv_max)
+            elif target_v < current_v:
+                current_v = max(target_v, current_v - dv_max)
+
+            if target_w > current_w:
+                current_w = min(target_w, current_w + dw_max)
+            elif target_w < current_w:
+                current_w = max(target_w, current_w - dw_max)
+
             twist = Twist()
-            twist.linear.x = float(target_v)
-            twist.angular.z = float(target_w)
+            twist.linear.x = float(current_v)
+            twist.angular.z = float(current_w)
             pub.publish(twist)
 
     except Exception as e:
