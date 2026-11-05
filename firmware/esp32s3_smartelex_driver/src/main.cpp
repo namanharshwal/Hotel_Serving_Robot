@@ -57,8 +57,8 @@ SmartElex30S motor_right(PIN_MOTOR_R_PWM, PIN_MOTOR_R_DIR, 1, false);
 EncoderReader enc_left(PIN_ENC_L_A, PIN_ENC_L_B, true);
 EncoderReader enc_right(PIN_ENC_R_A, PIN_ENC_R_B, true);  // Inverted for mirrored axle
 
-VelocityPID pid_left(16.0f, 8.0f, 0.0f, 49.0f);
-VelocityPID pid_right(16.0f, 8.0f, 0.0f, 49.0f);
+VelocityPID pid_left(8.0f, 4.0f, 0.0f, 28.0f);
+VelocityPID pid_right(8.0f, 4.0f, 0.0f, 28.0f);
 
 BatteryMonitor battery(PIN_BATT_ADC, 11.0f);
 PacketProtocol protocol(Serial);
@@ -258,30 +258,19 @@ void loop() {
             }
 
             // Closed-loop PID velocity control
-            if (abs(eff_target_l) < 0.02f && abs(actual_w_l) < 0.05f) {
+            if (abs(eff_target_l) < 0.01f) {
                 motor_left.brake();
                 pid_left.reset();
             } else {
                 float effort_l = pid_left.compute(eff_target_l, actual_w_l, dt);
-                // Unidirectional quadrant control: Prevent DIR pin chatter during forward or reverse driving
-                if (eff_target_l > 0.02f) {
-                    effort_l = max(0.0f, effort_l);  // Never reverse DIR when commanded forward
-                } else if (eff_target_l < -0.02f) {
-                    effort_l = min(0.0f, effort_l);  // Never forward DIR when commanded reverse
-                }
                 motor_left.setPwmRaw((int16_t)effort_l);
             }
 
-            if (abs(eff_target_r) < 0.02f && abs(actual_w_r) < 0.05f) {
+            if (abs(eff_target_r) < 0.01f) {
                 motor_right.brake();
                 pid_right.reset();
             } else {
                 float effort_r = pid_right.compute(eff_target_r, actual_w_r, dt);
-                if (eff_target_r > 0.02f) {
-                    effort_r = max(0.0f, effort_r);  // Never reverse DIR when commanded forward
-                } else if (eff_target_r < -0.02f) {
-                    effort_r = min(0.0f, effort_r);  // Never forward DIR when commanded reverse
-                }
                 motor_right.setPwmRaw((int16_t)effort_r);
             }
         }

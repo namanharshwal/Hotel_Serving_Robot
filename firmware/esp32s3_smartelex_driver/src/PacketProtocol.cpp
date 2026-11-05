@@ -26,35 +26,42 @@ bool PacketProtocol::processIncoming() {
     while (_stream.available()) {
         uint8_t b = _stream.read();
 
-        // 1. Check for human-readable ASCII commands (e.g. starting with 'm', 'p', 's', 't', '?')
-        if (_rx_idx == 0 && (b >= 32 && b <= 126)) {
-            if (b == '\r' || b == '\n') {
-                if (_ascii_idx > 0) {
-                    _ascii_buf[_ascii_idx] = '\0';
-                    handleAsciiCommand(_ascii_buf);
-                    _ascii_idx = 0;
-                    packet_handled = true;
-                }
-            } else if (_ascii_idx < sizeof(_ascii_buf) - 1) {
-                _ascii_buf[_ascii_idx++] = (char)b;
+        // 1. Hunt for Header Byte 1 (0xAA)
+        if (_rx_idx == 0) {
+            if (b == PROTOCOL_HDR1) {
+                _rx_buf[0] = b;
+                _rx_idx = 1;
             }
             continue;
         }
 
-        // 2. Binary Framed Packet State Machine
-        if (_rx_idx == 0 && b != PROTOCOL_HDR1) {
-            continue;
-        }
-        if (_rx_idx == 1 && b != PROTOCOL_HDR2) {
-            _rx_idx = 0;
+        // 2. Hunt for Header Byte 2 (0x55)
+        if (_rx_idx == 1) {
+            if (b == PROTOCOL_HDR2) {
+                _rx_buf[1] = b;
+                _rx_idx = 2;
+            } else if (b == PROTOCOL_HDR1) {
+                // Stay at index 1 if consecutive 0xAA received
+                _rx_buf[0] = b;
+                _rx_idx = 1;
+            } else {
+                _rx_idx = 0;
+            }
             continue;
         }
 
+        // 3. Receive Payload Length, Msg Type, Payload, and CRC16
         _rx_buf[_rx_idx++] = b;
 
-        if (_rx_idx >= 6) {
+        if (_rx_idx >= 4) {
             uint8_t payload_len = _rx_buf[2];
             size_t total_len = 2 + 1 + 1 + payload_len + 2;
+
+            // Bounds check to avoid buffer overflow
+            if (total_len > sizeof(_rx_buf)) {
+                _rx_idx = 0;
+                continue;
+            }
 
             if (_rx_idx == total_len) {
                 // CRC verification
@@ -93,44 +100,13 @@ bool PacketProtocol::processIncoming() {
                 _rx_idx = 0;
             }
         }
-
-        if (_rx_idx >= sizeof(_rx_buf)) {
-            _rx_idx = 0;
-        }
     }
 
     return packet_handled;
 }
 
 void PacketProtocol::handleAsciiCommand(const char *cmd_str) {
-    if (cmd_str[0] == 'm') { // m <left_rad_s> <right_rad_s>
-        float l = 0.0f, r = 0.0f;
-        if (sscanf(cmd_str + 1, "%f %f", &l, &r) >= 1) {
-            if (_cmd_vel_cb) {
-                CmdVelPayload cmd = {l, r};
-                _cmd_vel_cb(cmd);
-            }
-            _stream.printf("[OK] Set wheel speeds: L=%.2f, R=%.2f rad/s\n", l, r);
-        }
-    } else if (cmd_str[0] == 'p') { // p <left_pwm> <right_pwm>
-        int l_pwm = 0, r_pwm = 0;
-        if (sscanf(cmd_str + 1, "%d %d", &l_pwm, &r_pwm) >= 1) {
-            if (_raw_pwm_cb) {
-                RawPwmPayload pwm = {(int16_t)l_pwm, (int16_t)r_pwm};
-                _raw_pwm_cb(pwm);
-            }
-            _stream.printf("[OK] Set raw PWM: L=%d, R=%d\n", l_pwm, r_pwm);
-        }
-    } else if (cmd_str[0] == 's') { // Stop
-        if (_estop_cb) _estop_cb();
-        _stream.println("[OK] Emergency Stop triggered.");
-    } else if (cmd_str[0] == '?') {
-        _stream.println("=== Nammy Robot ESP32-S3 Mediator CLI ===");
-        _stream.println("  m <l> <r>  : Set wheel speeds (rad/s)");
-        _stream.println("  p <l> <r>  : Set raw PWM (-1023 to 1023)");
-        _stream.println("  s          : Emergency Stop");
-        _stream.println("==========================================");
-    }
+    (void)cmd_str;
 }
 
 void PacketProtocol::sendTelemetry(const TelemetryPayload &telemetry) {

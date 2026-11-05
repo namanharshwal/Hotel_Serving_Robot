@@ -36,7 +36,7 @@ class MotorManager(Node):
 
     def publish_status(self):
         msg = String()
-        msg.data = f"SmartElex 30S Dual: ACTIVE | MaxRadS: {self.max_rad_s:.2f} | 20kHz Silent PWM"
+        msg.data = f"SmartElex 30S Dual: ACTIVE | MaxRadS: {self.max_rad_s:.2f} | 490Hz Clean PWM"
         self.status_pub.publish(msg)
 
         limits_msg = Float32MultiArray()
