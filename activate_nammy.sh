@@ -37,9 +37,8 @@ else
     echo "[-] nammy_ws not yet compiled. Run 'colcon build' to generate install overlay."
 fi
 
-# 4. DDS Network Isolation & Security Policy
-# Using ROS_DOMAIN_ID=42 to guarantee zero crosstalk with hover_ws / other robots
-export ROS_DOMAIN_ID=42
+# 4. DDS Network Domain (defaults to 0 to match system ~/.bashrc, or preserves custom ID)
+export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}"
 export NAMMY_WS="${WS_DIR}"
 export ROBOT_MODEL="nammy_diff_drive"
 

@@ -71,6 +71,12 @@ def generate_launch_description():
         description='Launch 4x US-100 Sonar Fusion & Costmap PointCloud2'
     )
 
+    rviz_arg = DeclareLaunchArgument(
+        'launch_rviz',
+        default_value='true',
+        description='Launch RViz2 3D visualizer window'
+    )
+
     # 1. Robot State Publisher (3D URDF)
     robot_state_pub_node = Node(
         package='robot_state_publisher',
@@ -149,6 +155,17 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('launch_lidar'))
     )
 
+    # 8. RViz2 3D Robot Visualizer Window
+    rviz_config_file = os.path.join(desc_pkg, 'rviz', 'view_robot.rviz')
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file],
+        condition=IfCondition(LaunchConfiguration('launch_rviz'))
+    )
+
     return LaunchDescription([
         sim_arg,
         port_arg,
@@ -156,11 +173,13 @@ def generate_launch_description():
         lidar_arg,
         sim_lidar_arg,
         sonar_arg,
+        rviz_arg,
         robot_state_pub_node,
         base_bridge_node,
         motor_manager_node,
         imu_node,
         power_node,
         sonar_node,
-        lidar_launch
+        lidar_launch,
+        rviz_node
     ])
