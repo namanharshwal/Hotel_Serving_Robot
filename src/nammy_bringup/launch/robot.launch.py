@@ -41,9 +41,10 @@ def generate_launch_description():
         description='Run controller in software simulation fallback without hardware'
     )
 
+    default_serial = '/dev/nammy_esp32' if os.path.exists('/dev/nammy_esp32') else '/dev/ttyACM0'
     port_arg = DeclareLaunchArgument(
         'serial_port',
-        default_value='/dev/nammy_esp32',
+        default_value=default_serial,
         description='Serial port device path for ESP32-S3'
     )
 
