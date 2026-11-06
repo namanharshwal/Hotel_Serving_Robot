@@ -38,7 +38,7 @@ motor_manager:
 # 3. Bosch BNO055 9-DOF IMU (nammy_imu)
 bno055_node:
   ros__parameters:
-    i2c_bus: 7                 # Jetson 40-pin header Pin 27 (SDA) & Pin 28 (SCL)
+    i2c_bus: 1                 # Jetson 40-pin header Pin 3 (SDA) & Pin 5 (SCL) -> /dev/i2c-1
     i2c_address: 40            # 0x28 in decimal (0x28 = 40)
     frame_id: "imu_link"
     publish_rate: 100.0        # 100 Hz matching hover_ws

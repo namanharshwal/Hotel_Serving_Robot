@@ -78,7 +78,7 @@ class C270CameraNode(Node):
             self.cap = None
 
         if not os.path.exists(self.device_path):
-            self.get_logger().warn(f"Camera device {self.device_path} not found. Will retry...")
+            self.get_logger().warn(f"Camera device {self.device_path} not found. Will retry...", throttle_duration_sec=5.0)
             return False
 
         try:

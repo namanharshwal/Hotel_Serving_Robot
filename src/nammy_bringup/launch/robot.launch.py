@@ -51,8 +51,8 @@ def generate_launch_description():
 
     imu_bus_arg = DeclareLaunchArgument(
         'i2c_bus',
-        default_value='7',
-        description='I2C bus number for BNO055 on Jetson 40-pin header'
+        default_value='1',
+        description='I2C bus number for BNO055 on Jetson 40-pin header (Pin 3=SDA, Pin 5=SCL -> /dev/i2c-1)'
     )
 
     lidar_arg = DeclareLaunchArgument(

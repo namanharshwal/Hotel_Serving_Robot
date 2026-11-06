@@ -44,7 +44,7 @@ class BNO055Node(Node):
     def __init__(self):
         super().__init__('bno055_node')
 
-        self.declare_parameter('i2c_bus', 7)                # /dev/i2c-7 on Jetson 40-pin header (Pins 27, 28)
+        self.declare_parameter('i2c_bus', 1)                # /dev/i2c-1 on Jetson 40-pin header (Pins 3, 5)
         self.declare_parameter('i2c_address', 0x28)         # Default BNO055 I2C Address (0x28 = 40)
         self.declare_parameter('frame_id', 'imu_link')
         self.declare_parameter('publish_rate', 100.0)       # 100 Hz matching hover_ws
