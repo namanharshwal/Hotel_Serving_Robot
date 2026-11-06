@@ -7,6 +7,7 @@ Generates synthetic 360-degree laser scans when physical LiDAR is not connected.
 import math
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from sensor_msgs.msg import LaserScan
 
 class LidarSimFallback(Node):
@@ -23,7 +24,14 @@ class LidarSimFallback(Node):
         self.samples = self.get_parameter('samples').value
         self.room_r = self.get_parameter('sim_room_radius').value
 
-        self.scan_pub = self.create_publisher(LaserScan, 'scan', 10)
+        # Best effort QoS matching real YDLIDAR and SLAM Toolbox
+        scan_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=5,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.VOLATILE
+        )
+        self.scan_pub = self.create_publisher(LaserScan, 'scan', scan_qos)
         self.timer = self.create_timer(1.0 / self.freq, self.publish_scan)
         self.get_logger().info("YDLIDAR G2 Simulation Fallback active: publishing /scan at 10 Hz")
 
