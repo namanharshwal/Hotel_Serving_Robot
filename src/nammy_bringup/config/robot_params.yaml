@@ -41,7 +41,7 @@ bno055_node:
     i2c_bus: 7                 # Jetson 40-pin header Pin 27 (SDA) & Pin 28 (SCL)
     i2c_address: 40            # 0x28 in decimal (0x28 = 40)
     frame_id: "imu_link"
-    publish_rate: 50.0         # Hz
+    publish_rate: 100.0        # 100 Hz matching hover_ws
     simulate_hardware: false
 
 # 4. 24V 15Ah LiFePO4 Power Subsystem (nammy_power)
