@@ -85,6 +85,12 @@ def generate_launch_description():
         description='Launch RViz2 3D visualizer window'
     )
 
+    publish_odom_tf_arg = DeclareLaunchArgument(
+        'publish_odom_tf',
+        default_value='true',
+        description='Publish odom->base_footprint TF from base bridge (set false when EKF is active)'
+    )
+
     # 1. Robot State Publisher (3D URDF)
     robot_state_pub_node = Node(
         package='robot_state_publisher',
@@ -105,6 +111,7 @@ def generate_launch_description():
             {
                 'simulate_hardware': LaunchConfiguration('simulate_hardware'),
                 'serial_port': LaunchConfiguration('serial_port'),
+                'publish_tf': LaunchConfiguration('publish_odom_tf'),
             }
         ]
     )
@@ -192,6 +199,7 @@ def generate_launch_description():
         sonar_arg,
         camera_arg,
         rviz_arg,
+        publish_odom_tf_arg,
         robot_state_pub_node,
         base_bridge_node,
         motor_manager_node,

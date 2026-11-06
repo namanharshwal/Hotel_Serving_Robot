@@ -1,0 +1,121 @@
+# ==============================================================================
+# NAMMY ROBOT - EXTENDED KALMAN FILTER (EKF) CONFIGURATION
+# Sensor Fusion: ESP32-S3 Wheel Odometry + Bosch BNO055 9-DOF IMU
+# Directly ported and optimized from hover_ws production configuration
+#
+# Maintainer: Naman Harshwal <namanharshwal@gmail.com>
+# Copyright (c) 2026 Naman Harshwal. All rights reserved.
+# ==============================================================================
+
+ekf_filter_node:
+  ros__parameters:
+    frequency: 50.0
+    sensor_timeout: 0.2
+    two_d_mode: true
+    publish_tf: true
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    # Initial state covariance
+    initial_estimate_covariance: [1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2, 0.0,
+                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1e-2]
+
+    # Wheel Odometry from ESP32-S3 Hardware Bridge
+    odom0: /odom
+    odom0_config: [true,  true,  false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, true,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+    odom0_queue_depth: 10
+    odom0_pose_rejection_threshold: 5.0
+    odom0_twist_rejection_threshold: 1.0
+
+    # Covariance for Wheel Odometry
+    odom0_pose_covariance: [0.01,  0.0,    0.0,   0.0,    0.0, 0.0,
+                            0.0,   0.01,   0.0,   0.0,    0.0, 0.0,
+                            0.0,   0.0, 1e6,      0.0,    0.0, 0.0,
+                            0.0,   0.0,    0.0, 1e6,      0.0, 0.0,
+                            0.0,   0.0,    0.0,   0.0,  1e6,   0.0,
+                            0.0,   0.0,    0.0,   0.0,    0.0, 0.5]
+    
+    odom0_twist_covariance: [0.05, 0.0, 0.0, 0.0, 0.0, 0.0,
+                             0.0, 0.05, 0.0, 0.0, 0.0, 0.0,
+                             0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+                             0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+                             0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+                             0.0, 0.0, 0.0, 0.0, 0.0, 0.2]
+
+    # Bosch BNO055 9-DOF IMU
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  false, false, true,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]  # Disabled linear acceleration to prevent stationary drift
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_depth: 10
+    imu0_pose_rejection_threshold: 0.8
+    imu0_twist_rejection_threshold: 0.8
+    imu0_linear_acceleration_rejection_threshold: 0.8
+    imu0_remove_gravitational_acceleration: true
+
+    # Covariance for IMU
+    imu0_pose_covariance: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                           0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                           0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+                           0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+                           0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+                           0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    
+    imu0_twist_covariance: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
+                            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
+                            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    
+    imu0_linear_acceleration_covariance: [0.1, 0.0,  0.0,
+                                          0.0,  0.1, 0.0,
+                                          0.0,  0.0,  0.1]
+
+    # Process noise covariance - tuned for drift elimination
+    process_noise_covariance: [0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.005, 0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.005, 0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01]
+
+    dynamic_process_noise_covariance: true
+    smooth_lagged_data: false
+    history_length: 0.5
+    print_diagnostics: true
+    debug: false
