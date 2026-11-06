@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-SLAM Mapping Launch File for Nammy Robot Platform.
+SLAM Mapping Launch File for Nammy Robot Platform with Interactive Teleoperation.
 Integrates complete robot bringup with YDLIDAR G2, BNO055 IMU, C270 camera,
-robot_localization EKF sensor fusion, and SLAM Toolbox (online async mapping),
-with exact parameters and sequencing derived from hover_ws.
+robot_localization EKF sensor fusion, SLAM Toolbox (online async mapping),
+and interactive terminal teleoperation.
 
 Maintainer: Naman Harshwal <namanharshwal@gmail.com>
 Copyright (c) 2026 Naman Harshwal. All rights reserved.
@@ -12,7 +12,7 @@ Copyright (c) 2026 Naman Harshwal. All rights reserved.
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.conditions import IfCondition
@@ -58,6 +58,11 @@ def generate_launch_description():
         'rviz',
         default_value='true',
         description='Launch RViz2 with SLAM mapping configuration'
+    )
+    teleop_arg = DeclareLaunchArgument(
+        'teleop',
+        default_value='true',
+        description='Launch interactive keyboard teleoperation in an xterm window on DISPLAY'
     )
 
     # When EKF is enabled, suppress wheel odometry TF from ESP32 bridge so EKF publishes odom->base_footprint TF cleanly
@@ -129,6 +134,28 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('rviz'))
     )
 
+    # 5. Interactive Keyboard Teleoperation Window (opens in xterm window on DISPLAY=:1)
+    teleop_process = TimerAction(
+        period=3.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    'xterm',
+                    '-title', 'Nammy Robot Teleop Control',
+                    '-geometry', '88x26+40+40',
+                    '-fa', 'Monospace',
+                    '-fs', '11',
+                    '-bg', '#1c1c1c',
+                    '-fg', '#00ff88',
+                    '-e', 'bash', '-c',
+                    'source /opt/ros/humble/setup.bash && source /home/comppoint/Documents/nammy_ws/install/setup.bash && export ROS_DOMAIN_ID=0 && ros2 run nammy_teleop teleop_keyboard; exec bash'
+                ],
+                condition=IfCondition(LaunchConfiguration('teleop')),
+                output='screen'
+            )
+        ]
+    )
+
     return LaunchDescription([
         sim_hw_arg,
         sim_lidar_arg,
@@ -136,8 +163,10 @@ def generate_launch_description():
         i2c_bus_arg,
         use_ekf_arg,
         launch_rviz_arg,
+        teleop_arg,
         robot_bringup,
         ekf_node,
         slam_toolbox_node,
-        rviz_node
+        rviz_node,
+        teleop_process
     ])
