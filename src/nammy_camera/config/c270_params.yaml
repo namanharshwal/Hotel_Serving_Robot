@@ -1,0 +1,10 @@
+/**:
+  ros__parameters:
+    device_path: "/dev/video0"
+    frame_id: "camera_optical_frame"
+    image_width: 640
+    image_height: 480
+    framerate: 30.0
+    pixel_format: "YUYV"
+    camera_name: "c270_logitech_camera"
+    auto_reconnect: true

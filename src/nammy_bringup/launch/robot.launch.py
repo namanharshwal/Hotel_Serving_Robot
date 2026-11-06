@@ -26,6 +26,7 @@ def generate_launch_description():
     bringup_pkg = get_package_share_directory('nammy_bringup')
     lidar_pkg = get_package_share_directory('nammy_lidar')
     sonar_pkg = get_package_share_directory('nammy_sonar')
+    camera_pkg = get_package_share_directory('nammy_camera')
 
     # Process URDF Xacro
     xacro_file = os.path.join(desc_pkg, 'urdf', 'nammy_robot.urdf.xacro')
@@ -70,6 +71,12 @@ def generate_launch_description():
         'launch_sonar',
         default_value='true',
         description='Launch 4x US-100 Sonar Fusion & Costmap PointCloud2'
+    )
+
+    camera_arg = DeclareLaunchArgument(
+        'launch_camera',
+        default_value='true',
+        description='Launch Logitech C270 HD camera vision publisher'
     )
 
     rviz_arg = DeclareLaunchArgument(
@@ -156,7 +163,16 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('launch_lidar'))
     )
 
-    # 8. RViz2 3D Robot Visualizer Window
+    # 8. Logitech C270 HD Webcam Vision Node (nammy_camera)
+    camera_node = Node(
+        package='nammy_camera',
+        executable='c270_camera_node',
+        name='c270_camera_node',
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('launch_camera'))
+    )
+
+    # 9. RViz2 3D Robot Visualizer Window
     rviz_config_file = os.path.join(desc_pkg, 'rviz', 'view_robot.rviz')
     rviz_node = Node(
         package='rviz2',
@@ -174,6 +190,7 @@ def generate_launch_description():
         lidar_arg,
         sim_lidar_arg,
         sonar_arg,
+        camera_arg,
         rviz_arg,
         robot_state_pub_node,
         base_bridge_node,
@@ -182,5 +199,6 @@ def generate_launch_description():
         power_node,
         sonar_node,
         lidar_launch,
+        camera_node,
         rviz_node
     ])
