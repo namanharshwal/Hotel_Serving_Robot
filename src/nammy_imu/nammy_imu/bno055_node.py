@@ -126,7 +126,7 @@ class BNO055Node(Node):
                 imu_msg.linear_acceleration.z = float(az / 100.0)
 
             except Exception as e:
-                self.get_logger().warn(f"I2C read failure: {e}")
+                self.get_logger().warn(f"I2C read failure: {e}", throttle_duration_sec=2.0)
                 self.set_sim_orientation(imu_msg)
         else:
             self.set_sim_orientation(imu_msg)
