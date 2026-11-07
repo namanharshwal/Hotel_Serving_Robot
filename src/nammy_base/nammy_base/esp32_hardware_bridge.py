@@ -47,7 +47,7 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s
         self.declare_parameter('max_linear_acceleration', 4.0)  # Snappy instant response (4.0 m/s^2)
         self.declare_parameter('max_angular_acceleration', 8.0)  # Snappy instant turning (8.0 rad/s^2)
-        self.declare_parameter('invert_encoders', True)          # Invert encoder polarities to align with ROS REP-103 (+X forward)
+        self.declare_parameter('invert_encoders', False)         # Standard encoder polarity aligned with ROS REP-103 (+X forward)
 
         # Retrieve Parameters
         self.port_name = self.get_parameter('serial_port').get_parameter_value().string_value

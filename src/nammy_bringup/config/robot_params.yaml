@@ -27,6 +27,7 @@ esp32_hardware_bridge:
     max_angular_velocity: 2.5  # Max angular velocity (rad/s)
     max_linear_acceleration: 4.0   # Snappy real-time instant linear response (4.0 m/s^2)
     max_angular_acceleration: 8.0  # Snappy real-time instant angular response (8.0 rad/s^2)
+    invert_encoders: false         # Forward physical travel generates positive +X odometry displacement
 
 # 2. SmartElex 30S & AT120 Motor Manager (nammy_motors)
 motor_manager:

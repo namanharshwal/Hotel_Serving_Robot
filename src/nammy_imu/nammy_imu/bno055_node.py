@@ -10,6 +10,7 @@ Copyright (c) 2026 Naman Harshwal. All rights reserved.
 
 import time
 import struct
+import math
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Imu, MagneticField
@@ -63,6 +64,7 @@ class BNO055Node(Node):
         self.bus = None
         self.hardware_ready = False
         self.last_reconnect_attempt = 0.0
+        self.initial_yaw = None
 
         if not self.sim_mode:
             self.init_hardware()
@@ -162,13 +164,43 @@ class BNO055Node(Node):
             
             norm = (w*w + x*x + y*y + z*z) ** 0.5
             if norm > 0.0:
-                # Forward/backward pitch & roll orientation matches robot frame (-x, -y).
-                # Left/right yaw rotation (+z) calibrated so turning left (CCW) rotates left,
-                # ensuring full real-time left-right alignment with physical robot movement.
-                imu_msg.orientation.w = float(w / norm)
-                imu_msg.orientation.x = float(-x / norm)
-                imu_msg.orientation.y = float(-y / norm)
-                imu_msg.orientation.z = float(z / norm)
+                qw = float(w / norm)
+                qx = float(x / norm)
+                qy = float(y / norm)
+                qz = float(z / norm)
+
+                # Compute Euler angles from fused quaternion
+                siny_cosp = 2.0 * (qw * qz + qx * qy)
+                cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
+                raw_yaw = math.atan2(siny_cosp, cosy_cosp)
+
+                sinp = max(-1.0, min(1.0, 2.0 * (qw * qy - qz * qx)))
+                pitch = math.asin(sinp)
+
+                sinr_cosp = 2.0 * (qw * qx + qy * qz)
+                cosr_cosp = 1.0 - 2.0 * (qx * qx + qy * qy)
+                roll = math.atan2(sinr_cosp, cosr_cosp)
+
+                # Auto-zero initial heading tare offset so robot forward heading starts at 0.00 deg
+                if self.initial_yaw is None:
+                    self.initial_yaw = raw_yaw
+                    self.get_logger().info(f"[BNO055] Auto-zeroed initial heading tare offset: {raw_yaw * 57.2958:.2f}° -> 0.00° (eliminates sideways motion)")
+
+                aligned_yaw = raw_yaw - self.initial_yaw
+                aligned_yaw = math.atan2(math.sin(aligned_yaw), math.cos(aligned_yaw))
+
+                # Reconstruct aligned quaternion (zero yaw at startup)
+                cy = math.cos(aligned_yaw * 0.5)
+                sy = math.sin(aligned_yaw * 0.5)
+                cp = math.cos(pitch * 0.5)
+                sp = math.sin(pitch * 0.5)
+                cr = math.cos(roll * 0.5)
+                sr = math.sin(roll * 0.5)
+
+                imu_msg.orientation.w = float(cr * cp * cy + sr * sp * sy)
+                imu_msg.orientation.x = float(sr * cp * cy - cr * sp * sy)
+                imu_msg.orientation.y = float(cr * sp * cy + sr * cp * sy)
+                imu_msg.orientation.z = float(cr * cp * sy - sr * sp * cy)
             else:
                 return
 
