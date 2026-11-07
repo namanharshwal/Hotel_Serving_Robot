@@ -40,9 +40,9 @@ class LidarSimFallback(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = self.frame_id
 
-        msg.angle_min = -math.pi
-        msg.angle_max = math.pi
-        msg.angle_increment = (2.0 * math.pi) / self.samples
+        msg.angle_min = -math.pi / 2.0  # Front 180-degree field of view (-90 deg)
+        msg.angle_max = math.pi / 2.0   # Front 180-degree field of view (+90 deg)
+        msg.angle_increment = math.pi / self.samples
         msg.time_increment = (1.0 / self.freq) / self.samples
         msg.scan_time = 1.0 / self.freq
         msg.range_min = 0.12
