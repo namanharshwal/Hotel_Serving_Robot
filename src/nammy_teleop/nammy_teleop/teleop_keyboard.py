@@ -107,6 +107,8 @@ def get_key(settings, timeout=0.02):
             elif extra == '[B': key = 's'
             elif extra == '[D': key = 'a'
             elif extra == '[C': key = 'd'
+        elif len(key) == 1 and key.isalpha():
+            key = key.lower()
     else:
         key = ''
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
@@ -133,13 +135,14 @@ def main():
     active_v_dir = 0.0
     active_w_dir = 0.0
 
-    # Hold-to-drive timeout must be safely above Linux X11 500ms key repeat delay
-    deadman_mode = False   # Cruise/Latch mode default for smooth manual SLAM mapping
+    # Default to Hold-to-Drive (Deadman) mode with smooth decay stop
+    # Toggle to Cruise with 'h'
+    deadman_mode = True
     last_key_time = time.time()
-    deadman_hold_timeout = 0.80  # 800ms ensures zero dropout during keyboard repeat
+    deadman_hold_timeout = 0.65  # 650ms safely accommodates Linux X11 500ms initial repeat delay
 
     # Acceleration limits (m/s^2 and rad/s^2) for buttery smooth motion without wheel jerk
-    MAX_LIN_ACCEL = 0.35  # m/s^2 (buttery smooth ~0.35s ramp to 0.12 m/s)
+    MAX_LIN_ACCEL = 0.30  # m/s^2 (buttery smooth ~0.4s ramp to 0.12 m/s)
     MAX_ANG_ACCEL = MAX_LIN_ACCEL / HALF_TRACK_M  # Exactly matched angular acceleration
 
     domain_id = os.environ.get('ROS_DOMAIN_ID', '0')
@@ -164,34 +167,38 @@ def main():
             if key == '\x03':  # CTRL+C
                 break
 
-            # 1. Preset Speed Selection
+            # 1. Preset Speed Selection (Keys 1..5)
             if key in SPEED_PRESETS:
                 current_preset = key
                 linear_speed = SPEED_PRESETS[key]
                 angular_speed = round(linear_speed / HALF_TRACK_M, 3)
                 target_v = active_v_dir * linear_speed
                 target_w = active_w_dir * angular_speed
+                last_key_time = now
                 print(f"\r[PRESET {key}: {PRESET_NAMES[key]}] Linear: {linear_speed:.2f} m/s | Turn: {angular_speed:.2f} rad/s                    ", flush=True)
 
-            # 2. Continuous Speed Fine-Tuning
-            elif key in ('q', '+', '='):
+            # 2. Continuous Speed Fine-Tuning (q/z, +/-)
+            elif key in ('q', '+', '=', ']'):
                 linear_speed = min(0.50, round(linear_speed + 0.02, 3))
                 angular_speed = round(linear_speed / HALF_TRACK_M, 3)
                 target_v = active_v_dir * linear_speed
                 target_w = active_w_dir * angular_speed
+                last_key_time = now
                 print(f"\r[SPEED+] Linear: {linear_speed:.2f} m/s | Turn: {angular_speed:.2f} rad/s (Wheel RPM Matched)          ", flush=True)
 
-            elif key in ('z', '-', '_'):
+            elif key in ('z', '-', '_', '['):
                 linear_speed = max(0.03, round(linear_speed - 0.02, 3))
                 angular_speed = round(linear_speed / HALF_TRACK_M, 3)
                 target_v = active_v_dir * linear_speed
                 target_w = active_w_dir * angular_speed
+                last_key_time = now
                 print(f"\r[SPEED-] Linear: {linear_speed:.2f} m/s | Turn: {angular_speed:.2f} rad/s (Wheel RPM Matched)          ", flush=True)
 
-            # 3. Mode Toggle
+            # 3. Mode Toggle (Hold-to-Drive vs Cruise)
             elif key == 'h':
                 deadman_mode = not deadman_mode
                 mode_str = 'HOLD-TO-DRIVE (Smooth Deadman)' if deadman_mode else 'CRUISE (Latched)'
+                last_key_time = now
                 print(f"\r[MODE SWITCH] -> Switched to {mode_str:<45}", flush=True)
 
             # 4. Motion Keys
@@ -204,9 +211,10 @@ def main():
                 last_key_time = now
 
                 if v_mult == 0.0 and w_mult == 0.0:
-                    status_line = "HALT / STOP"
-                    current_v = 0.0
-                    current_w = 0.0
+                    status_line = "HALT / STOP (Smooth Decel)"
+                    # Smoothly ramp target down to zero (do not hard-zero current_v to avoid shudder)
+                    target_v = 0.0
+                    target_w = 0.0
                 elif v_mult > 0.0 and w_mult == 0.0:
                     status_line = f"FORWARD ({linear_speed:.2f} m/s)"
                 elif v_mult < 0.0 and w_mult == 0.0:
@@ -218,7 +226,7 @@ def main():
                 else:
                     status_line = f"DIAGONAL (V:{target_v:+.2f} W:{target_w:+.2f})"
 
-                print(f"\r[{status_line:<28}] Speed: {linear_speed:.2f} m/s | Mode: {'HOLD' if deadman_mode else 'CRUISE'}     ", end='', flush=True)
+                print(f"\r[{status_line:<30}] Speed: {linear_speed:.2f} m/s | Mode: {'HOLD' if deadman_mode else 'CRUISE'}     ", end='', flush=True)
 
             # 5. Deadman Hold-Timeout Check
             elif deadman_mode:

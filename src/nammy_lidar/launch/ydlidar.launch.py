@@ -34,6 +34,8 @@ def generate_launch_description():
         executable='ydlidar_ros2_driver_node',
         name='ydlidar_ros2_driver_node',
         output='screen',
+        respawn=True,
+        respawn_delay=3.0,
         parameters=[LaunchConfiguration('params_file')],
         condition=UnlessCondition(LaunchConfiguration('simulate_lidar'))
     )

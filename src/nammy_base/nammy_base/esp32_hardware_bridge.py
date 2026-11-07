@@ -45,6 +45,8 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('simulate_hardware', False)   # Auto-fallback if port not present
         self.declare_parameter('max_linear_velocity', 1.2)   # Max linear velocity m/s
         self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s
+        self.declare_parameter('max_linear_acceleration', 0.35)  # Max linear acceleration m/s^2 (Smooth S-curve ramp)
+        self.declare_parameter('max_angular_acceleration', 1.0)  # Max angular acceleration rad/s^2
 
         # Retrieve Parameters
         self.port_name = self.get_parameter('serial_port').get_parameter_value().string_value
@@ -59,6 +61,8 @@ class ESP32HardwareBridge(Node):
         self.sim_mode = self.get_parameter('simulate_hardware').get_parameter_value().bool_value
         self.max_v = self.get_parameter('max_linear_velocity').get_parameter_value().double_value
         self.max_w = self.get_parameter('max_angular_velocity').get_parameter_value().double_value
+        self.max_lin_accel = self.get_parameter('max_linear_acceleration').get_parameter_value().double_value
+        self.max_ang_accel = self.get_parameter('max_angular_acceleration').get_parameter_value().double_value
 
         self.cb_group = ReentrantCallbackGroup()
 
@@ -66,11 +70,14 @@ class ESP32HardwareBridge(Node):
         self.get_logger().info("INITIALIZING NAMMY ROBOT ESP32-S3 HARDWARE BRIDGE")
         self.get_logger().info(f"Target Port: {self.port_name} @ {self.baud_rate} baud")
         self.get_logger().info(f"Wheel Radius: {self.r:.3f} m (100mm Disc) | Separation: {self.b:.3f} m")
+        self.get_logger().info(f"S-Curve Slew Limiter: Lin {self.max_lin_accel:.2f} m/s^2 | Ang {self.max_ang_accel:.2f} rad/s^2")
         self.get_logger().info("==================================================================")
 
         # State Variables
         self.target_v = 0.0
         self.target_w = 0.0
+        self.current_v = 0.0
+        self.current_w = 0.0
         self.last_cmd_time = self.get_clock().now()
         
         # Dead Reckoning Odometry State
@@ -198,16 +205,33 @@ class ESP32HardwareBridge(Node):
         # 1. Check command timeout (Software Watchdog)
         time_since_cmd = (current_time - self.last_cmd_time).nanoseconds / 1e9
         if time_since_cmd > self.cmd_timeout:
-            target_v = 0.0
-            target_w = 0.0
+            desired_v = 0.0
+            desired_w = 0.0
         else:
-            target_v = self.target_v
-            target_w = self.target_w
+            desired_v = self.target_v
+            desired_w = self.target_w
 
-        # 2. Differential Drive Inverse Kinematics
+        # S-Curve Acceleration & Deceleration Slew Limiter (Anti-Jerk Filter)
+        # Prevents any step jumps in motor torque; guarantees buttery-smooth starts and stops
+        max_v_step = self.max_lin_accel * dt
+        max_w_step = self.max_ang_accel * dt
+
+        delta_v = desired_v - self.current_v
+        if abs(delta_v) <= max_v_step:
+            self.current_v = desired_v
+        else:
+            self.current_v += math.copysign(max_v_step, delta_v)
+
+        delta_w = desired_w - self.current_w
+        if abs(delta_w) <= max_w_step:
+            self.current_w = desired_w
+        else:
+            self.current_w += math.copysign(max_w_step, delta_w)
+
+        # 2. Differential Drive Inverse Kinematics with smoothly ramped velocities
         # Left and Right wheel target angular velocities (rad/s)
-        left_target_rad_s = (target_v - (target_w * self.b / 2.0)) / self.r
-        right_target_rad_s = (target_v + (target_w * self.b / 2.0)) / self.r
+        left_target_rad_s = (self.current_v - (self.current_w * self.b / 2.0)) / self.r
+        right_target_rad_s = (self.current_v + (self.current_w * self.b / 2.0)) / self.r
 
         # 3. Transmit to ESP32-S3 or Simulate
         if not self.sim_mode and self.serial_conn and self.serial_conn.is_open:
