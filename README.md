@@ -1676,16 +1676,30 @@ ros2 launch nammy_bringup mapping.launch.py rviz:=true
 
 ---
 
-### Runbook 3: Keyboard Teleoperation with Auto-Stop Deadman
-In a separate terminal or remote SSH session:
+### Runbook 3: Physical Manual Robot Control (Zero Simulation, Zero RViz)
+For pure physical manual robot movement without launching any simulations, RViz, Nav2, or SLAM:
+
+**Option A: In-Terminal Direct Control (Fastest, Recommended)**
 ```bash
-source /home/comppoint/Documents/nammy_ws/activate_nammy.sh
-ros2 run nammy_teleop teleop_keyboard
+# Sourced automatically in any terminal, or run:
+source ~/Documents/nammy_ws/activate_nammy.sh
+nammy_manual
 ```
-* **Drive:** Hold `w` / `i` (Forward), `s` / `,` (Reverse), `a` / `j` (Turn Left), `d` / `l` (Turn Right).
-* **Auto-Stop Deadman:** Release the key $	o$ robot automatically decelerates smoothly to exact $0.000	ext{ m/s}$ in $250	ext{ ms}$.
-* **Speed Adjustments:** `q` / `z` (Linear $\pm 0.05	ext{ m/s}$), `e` / `c` (Angular $\pm 0.10	ext{ rad/s}$).
-* **Emergency Brake:** Press `Space` or `x` / `k`.
+*(Or directly: `bash ~/Documents/nammy_ws/scripts/manual_teleop.sh`)*
+
+**Option B: Desktop GUI Launcher (Opens Teleop xterm Window)**
+```bash
+nammy_manual_gui
+# Or:
+ros2 launch nammy_bringup manual_teleop.launch.py
+```
+
+* **Controls:**
+  - **Drive:** Hold `w` / `i` (Forward), `s` / `,` (Reverse), `a` / `j` (Turn Left), `d` / `l` (Turn Right).
+  - **Speed Presets:** Press `1` (Crawl 0.05 m/s), `2` (Slow 0.12 m/s), `3` (Normal 0.20 m/s), `4` (Brisk 0.32 m/s), `5` (Fast 0.45 m/s).
+  - **Auto-Stop Deadman:** Release the key $\rightarrow$ robot automatically decelerates smoothly to exact $0.000\text{ m/s}$.
+  - **Fine-Tuning:** `q` / `+` (Increase $+0.02\text{ m/s}$), `z` / `-` (Decrease $-0.02\text{ m/s}$).
+  - **Emergency Brake:** Press `Space` or `x` / `k`.
 
 ---
 
