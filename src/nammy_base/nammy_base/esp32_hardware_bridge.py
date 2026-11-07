@@ -45,8 +45,8 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('simulate_hardware', False)   # Auto-fallback if port not present
         self.declare_parameter('max_linear_velocity', 1.2)   # Max linear velocity m/s
         self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s
-        self.declare_parameter('max_linear_acceleration', 0.35)  # Max linear acceleration m/s^2 (Smooth S-curve ramp)
-        self.declare_parameter('max_angular_acceleration', 1.0)  # Max angular acceleration rad/s^2
+        self.declare_parameter('max_linear_acceleration', 4.0)  # Snappy instant response (4.0 m/s^2)
+        self.declare_parameter('max_angular_acceleration', 8.0)  # Snappy instant turning (8.0 rad/s^2)
         self.declare_parameter('invert_encoders', True)          # Invert encoder polarities to align with ROS REP-103 (+X forward)
 
         # Retrieve Parameters
