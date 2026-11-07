@@ -40,13 +40,14 @@
   <link name="base_footprint"/>
 
   <joint name="base_footprint_joint" type="fixed">
-    <origin xyz="0 0 0.033293" rpy="0 0 ${pi}"/>
+    <origin xyz="0 0 0.033293" rpy="0 0 0"/>
     <parent link="base_footprint"/>
     <child link="base_link"/>
   </joint>
 
   <!-- ============================================================================== -->
   <!-- BASE LINK (SolidWorks Main Chassis)                                            -->
+  <!-- Visual CAD model rotated by pi so robot front faces forward in RViz            -->
   <!-- ============================================================================== -->
   <link name="base_link">
     <inertial>
@@ -58,14 +59,14 @@
         izz="0.078777"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 ${pi}"/>
       <geometry>
         <mesh filename="package://nammy_description/meshes/base_link.STL"/>
       </geometry>
       <material name="chassis_silver"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 ${pi}"/>
       <geometry>
         <mesh filename="package://nammy_description/meshes/base_link.STL"/>
       </geometry>
@@ -331,7 +332,7 @@
   </link>
 
   <joint name="lidar_joint" type="fixed">
-    <origin xyz="0.23449 -4.7499E-05 0.11547" rpy="0 0 0"/>
+    <origin xyz="0.23449 -4.7499E-05 0.11547" rpy="0 0 ${pi}"/>
     <parent link="base_link"/>
     <child link="laser_frame"/>
   </joint>
