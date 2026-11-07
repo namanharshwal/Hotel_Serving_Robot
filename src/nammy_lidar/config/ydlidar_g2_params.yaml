@@ -20,7 +20,7 @@
     sample_rate: 9              # ~2880 points/revolution
     abnormal_check_count: 4
     fixed_resolution: true      # Consistent angular resolution across scans
-    reversion: false            # Standard orientation
+    reversion: true             # 180-degree hardware offset alignment for YDLIDAR G2
     inverted: true              # Upright top chassis mounting orientation
     auto_reconnect: true        # Automatic serial port recovery upon glitch
     support_motor_dtr: true     # Enable DTR line to start/stop the spinning motor
