@@ -29,6 +29,18 @@ esp32_hardware_bridge:
     max_angular_acceleration: 8.0  # Snappy real-time instant angular response (8.0 rad/s^2)
     invert_encoders: false         # Forward physical travel generates positive +X odometry displacement
 
+    # Active IMU Heading Stabilization & Dual Motor RPM Synchronization
+    enable_imu_heading_hold: true  # Closed-loop BNO055 heading hold for zero straight-line drift
+    heading_kp: 2.2                # Heading error proportional gain (rad/s per rad)
+    heading_ki: 0.08               # Heading error integral gain
+    heading_kd: 0.15               # Gyroscopic rate damping gain (rad/s per rad/s)
+    max_heading_correction: 0.60   # Maximum angular velocity correction trim (rad/s)
+    enable_rpm_sync: true          # Dual motor speed cross-coupling equalizer
+    rpm_sync_kp: 0.25              # Wheel speed error proportional gain
+    rpm_sync_ki: 0.04              # Wheel speed error integral gain
+    straight_lin_threshold: 0.01   # Min linear speed to activate heading lock (m/s)
+    straight_ang_threshold: 0.05   # Max angular command considered straight motion (rad/s)
+
 # 2. SmartElex 30S & AT120 Motor Manager (nammy_motors)
 motor_manager:
   ros__parameters:

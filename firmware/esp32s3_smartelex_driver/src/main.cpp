@@ -264,8 +264,8 @@ void loop() {
                 eff_target_r = max(0.0f, eff_target_r);
             }
 
-            // Smooth setpoint acceleration ramping (eliminates step inputs into PID loop)
-            const float MAX_ACCEL_RAD_S2 = 10.0f;  // ~0.50 m/s^2 linear acceleration limit
+            // Smooth setpoint acceleration ramping (snappy instant response matched to Jetson 4.0 m/s^2)
+            const float MAX_ACCEL_RAD_S2 = 80.0f;  // Instant snappy acceleration (4.0 m/s^2 linear)
             float max_step = MAX_ACCEL_RAD_S2 * dt;
 
             if (eff_target_l > ramped_target_l) {
@@ -280,24 +280,36 @@ void loop() {
                 ramped_target_r = max(eff_target_r, ramped_target_r - max_step);
             }
 
-            // Closed-loop PID velocity control with smooth deceleration
+            // Closed-loop PID velocity control with smooth deceleration and dual-motor RPM synchronization
+            float effort_l = 0.0f;
+            float effort_r = 0.0f;
+
             if (abs(ramped_target_l) < 0.02f && abs(eff_target_l) < 0.01f) {
                 ramped_target_l = 0.0f;
-                motor_left.setPwmRaw(0);
                 pid_left.reset();
             } else {
-                float effort_l = pid_left.compute(ramped_target_l, actual_w_l, dt);
-                motor_left.setPwmRaw((int16_t)effort_l);
+                effort_l = pid_left.compute(ramped_target_l, actual_w_l, dt);
             }
 
             if (abs(ramped_target_r) < 0.02f && abs(eff_target_r) < 0.01f) {
                 ramped_target_r = 0.0f;
-                motor_right.setPwmRaw(0);
                 pid_right.reset();
             } else {
-                float effort_r = pid_right.compute(ramped_target_r, actual_w_r, dt);
-                motor_right.setPwmRaw((int16_t)effort_r);
+                effort_r = pid_right.compute(ramped_target_r, actual_w_r, dt);
             }
+
+            // Active Dual Motor Cross-Coupling Equalizer:
+            // When commanded to drive straight (|eff_target_l - eff_target_r| < 0.01),
+            // dynamically trim motor efforts so both wheels spin at identical RPM together.
+            if (abs(eff_target_l) > 0.05f && abs(eff_target_l - eff_target_r) < 0.01f) {
+                float speed_diff = actual_w_l - actual_w_r; // >0 means left is spinning faster
+                float sync_effort = constrain(speed_diff * 12.0f, -80.0f, 80.0f);
+                effort_l -= sync_effort;
+                effort_r += sync_effort;
+            }
+
+            motor_left.setPwmRaw((int16_t)effort_l);
+            motor_right.setPwmRaw((int16_t)effort_r);
         }
     }
 

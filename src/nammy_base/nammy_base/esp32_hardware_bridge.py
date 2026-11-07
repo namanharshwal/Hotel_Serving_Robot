@@ -19,7 +19,8 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState, BatteryState, Range
+from sensor_msgs.msg import JointState, BatteryState, Range, Imu
+from rclpy.qos import qos_profile_sensor_data
 from tf2_ros import TransformBroadcaster
 
 from nammy_base.packet_protocol import (
@@ -48,6 +49,18 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('max_linear_acceleration', 4.0)  # Snappy instant response (4.0 m/s^2)
         self.declare_parameter('max_angular_acceleration', 8.0)  # Snappy instant turning (8.0 rad/s^2)
         self.declare_parameter('invert_encoders', False)         # Standard encoder polarity aligned with ROS REP-103 (+X forward)
+        
+        # Closed-Loop IMU Heading Stabilization & Dual-Motor Synchronization Parameters
+        self.declare_parameter('enable_imu_heading_hold', True)
+        self.declare_parameter('heading_kp', 2.2)            # Heading error proportional gain (rad/s per rad)
+        self.declare_parameter('heading_ki', 0.08)           # Heading error integral gain
+        self.declare_parameter('heading_kd', 0.15)           # Gyroscopic rate damping gain (rad/s per rad/s)
+        self.declare_parameter('max_heading_correction', 0.60) # Maximum corrective angular velocity (rad/s)
+        self.declare_parameter('enable_rpm_sync', True)       # Cross-motor speed equalizer
+        self.declare_parameter('rpm_sync_kp', 0.25)          # Wheel speed error proportional gain
+        self.declare_parameter('rpm_sync_ki', 0.04)          # Wheel speed error integral gain
+        self.declare_parameter('straight_lin_threshold', 0.01) # Min linear speed to activate heading lock (m/s)
+        self.declare_parameter('straight_ang_threshold', 0.05) # Max angular command considered straight motion (rad/s)
 
         # Retrieve Parameters
         self.port_name = self.get_parameter('serial_port').get_parameter_value().string_value
@@ -65,6 +78,16 @@ class ESP32HardwareBridge(Node):
         self.max_lin_accel = self.get_parameter('max_linear_acceleration').get_parameter_value().double_value
         self.max_ang_accel = self.get_parameter('max_angular_acceleration').get_parameter_value().double_value
         self.invert_encoders = self.get_parameter('invert_encoders').get_parameter_value().bool_value
+        self.enable_imu_heading_hold = self.get_parameter('enable_imu_heading_hold').get_parameter_value().bool_value
+        self.heading_kp = self.get_parameter('heading_kp').get_parameter_value().double_value
+        self.heading_ki = self.get_parameter('heading_ki').get_parameter_value().double_value
+        self.heading_kd = self.get_parameter('heading_kd').get_parameter_value().double_value
+        self.max_heading_corr = self.get_parameter('max_heading_correction').get_parameter_value().double_value
+        self.enable_rpm_sync = self.get_parameter('enable_rpm_sync').get_parameter_value().bool_value
+        self.rpm_sync_kp = self.get_parameter('rpm_sync_kp').get_parameter_value().double_value
+        self.rpm_sync_ki = self.get_parameter('rpm_sync_ki').get_parameter_value().double_value
+        self.straight_lin_thresh = self.get_parameter('straight_lin_threshold').get_parameter_value().double_value
+        self.straight_ang_thresh = self.get_parameter('straight_ang_threshold').get_parameter_value().double_value
 
         self.cb_group = ReentrantCallbackGroup()
 
@@ -96,6 +119,15 @@ class ESP32HardwareBridge(Node):
         self.prev_left_pos = None
         self.prev_right_pos = None
         
+        # IMU Heading Stabilization & Synchronization State
+        self.imu_yaw = 0.0
+        self.imu_yaw_rate = 0.0
+        self.last_imu_time = None
+        self.target_heading = 0.0
+        self.heading_hold_active = False
+        self.heading_integral = 0.0
+        self.rpm_sync_integral = 0.0
+
         # Battery state & Ultrasonic Ranges
         self.battery_voltage = 26.4  # Nominal 24V LiFePO4 (8S)
         self.sonar_front_m = 4.50
@@ -115,6 +147,13 @@ class ESP32HardwareBridge(Node):
 
         # Subscribers
         self.cmd_sub = self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10, callback_group=self.cb_group)
+        self.imu_sub = self.create_subscription(
+            Imu,
+            'imu/data',
+            self.imu_callback,
+            qos_profile_sensor_data,
+            callback_group=self.cb_group
+        )
 
         # Serial Communication
         self.serial_conn = None
@@ -125,6 +164,24 @@ class ESP32HardwareBridge(Node):
         # Timers
         self.loop_timer = self.create_timer(1.0 / self.publish_rate, self.control_loop, callback_group=self.cb_group)
         self.heartbeat_timer = self.create_timer(0.5, self.send_heartbeat, callback_group=self.cb_group)
+
+    @staticmethod
+    def normalize_angle(angle: float) -> float:
+        """Normalize angle to [-pi, pi]."""
+        while angle > math.pi:
+            angle -= 2.0 * math.pi
+        while angle < -math.pi:
+            angle += 2.0 * math.pi
+        return angle
+
+    def imu_callback(self, msg: Imu):
+        """Extract orientation yaw and gyroscopic angular velocity from Bosch BNO055."""
+        q = msg.orientation
+        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        self.imu_yaw = math.atan2(siny_cosp, cosy_cosp)
+        self.imu_yaw_rate = msg.angular_velocity.z
+        self.last_imu_time = self.get_clock().now()
 
     def init_serial(self):
         """Connect to ESP32-S3 serial port with graceful simulation fallback."""
@@ -230,12 +287,70 @@ class ESP32HardwareBridge(Node):
         else:
             self.current_w += math.copysign(max_w_step, delta_w)
 
-        # 2. Differential Drive Inverse Kinematics with smoothly ramped velocities
-        # Left and Right wheel target angular velocities (rad/s)
-        left_target_rad_s = (self.current_v - (self.current_w * self.b / 2.0)) / self.r
-        right_target_rad_s = (self.current_v + (self.current_w * self.b / 2.0)) / self.r
+        # 2. Closed-Loop IMU Heading Stabilization & Wheel Speed Synchronization
+        w_imu_corr = 0.0
+        sync_corr = 0.0
+        is_commanded_straight = (abs(self.current_v) > self.straight_lin_thresh) and \
+                                (abs(self.target_w) < self.straight_ang_thresh)
 
-        # 3. Transmit to ESP32-S3 or Simulate
+        if is_commanded_straight:
+            # Check if IMU data is available and fresh (< 200 ms)
+            imu_fresh = False
+            if self.last_imu_time is not None:
+                imu_age = (current_time - self.last_imu_time).nanoseconds / 1e9
+                if imu_age < 0.20:
+                    imu_fresh = True
+
+            # Engage heading hold: latch heading at motion onset
+            if not self.heading_hold_active and imu_fresh:
+                self.target_heading = self.imu_yaw
+                self.heading_hold_active = True
+                self.heading_integral = 0.0
+                self.rpm_sync_integral = 0.0
+                self.get_logger().info(
+                    f"[HEADING HOLD] Engaged. Latched Heading: {math.degrees(self.target_heading):.2f}°",
+                    throttle_duration_sec=2.0
+                )
+
+            if self.heading_hold_active and imu_fresh and self.enable_imu_heading_hold:
+                # Shortest angular error between latched heading and current IMU orientation
+                yaw_error = self.normalize_angle(self.target_heading - self.imu_yaw)
+
+                self.heading_integral += yaw_error * dt
+                self.heading_integral = max(-0.5, min(0.5, self.heading_integral))
+
+                # Corrective angular velocity (PD controller with gyroscopic rate damping)
+                # If robot drifted left (imu_yaw > target_heading -> yaw_error < 0),
+                # corrective omega is negative -> steers robot right to restore heading.
+                w_imu_corr = (self.heading_kp * yaw_error) + \
+                             (self.heading_ki * self.heading_integral) - \
+                             (self.heading_kd * self.imu_yaw_rate)
+
+                # Clamp corrective angular velocity within configured limits
+                w_imu_corr = max(-self.max_heading_corr, min(self.max_heading_corr, w_imu_corr))
+
+            # Wheel RPM Equalizer (Electronic Differential Lock)
+            # If encoders show one wheel spinning faster than the other during straight motion
+            if self.enable_rpm_sync and abs(self.current_v) > 0.02:
+                # speed_diff > 0 means left wheel is spinning faster than right
+                speed_diff = self.left_vel - self.right_vel
+                self.rpm_sync_integral += speed_diff * dt
+                self.rpm_sync_integral = max(-1.0, min(1.0, self.rpm_sync_integral))
+
+                sync_corr = (self.rpm_sync_kp * speed_diff) + (self.rpm_sync_ki * self.rpm_sync_integral)
+                sync_corr = max(-1.5, min(1.5, sync_corr))
+        else:
+            # User commanded a turn or robot is stationary -> disengage heading lock
+            self.heading_hold_active = False
+            self.heading_integral = 0.0
+            self.rpm_sync_integral = 0.0
+
+        # 3. Differential Drive Inverse Kinematics with Active Heading & Sync Trim
+        effective_w = self.current_w + w_imu_corr
+        left_target_rad_s = (self.current_v - (effective_w * self.b / 2.0)) / self.r - (sync_corr / 2.0)
+        right_target_rad_s = (self.current_v + (effective_w * self.b / 2.0)) / self.r + (sync_corr / 2.0)
+
+        # 4. Transmit to ESP32-S3 or Simulate
         if not self.sim_mode and self.serial_conn and self.serial_conn.is_open:
             self.send_serial_cmd(left_target_rad_s, right_target_rad_s)
             self.read_serial_telemetry()
@@ -248,7 +363,7 @@ class ESP32HardwareBridge(Node):
             self.left_pos += self.left_vel * dt
             self.right_pos += self.right_vel * dt
 
-        # 4. Forward Kinematics & Odometry Integration
+        # 5. Forward Kinematics & Odometry Integration
         if self.prev_left_pos is None or self.prev_right_pos is None:
             self.prev_left_pos = self.left_pos
             self.prev_right_pos = self.right_pos
