@@ -27,7 +27,7 @@ def generate_launch_description():
     desc_pkg = get_package_share_directory('nammy_description')
     nav2_pkg = get_package_share_directory('nav2_bringup')
 
-    default_map = os.path.join(os.path.expanduser('~'), 'Documents', 'nammy_ws', 'maps', 'room1_2Dmap.yaml')
+    default_map = os.path.join(os.path.expanduser('~'), 'Documents', 'nammy_ws', 'maps', 'raj_sir_home_lab_room.yaml')
     default_serial = '/dev/nammy_esp32' if os.path.exists('/dev/nammy_esp32') else '/dev/ttyACM0'
 
     ekf_params_file = os.path.join(bringup_pkg, 'config', 'ekf.yaml')
