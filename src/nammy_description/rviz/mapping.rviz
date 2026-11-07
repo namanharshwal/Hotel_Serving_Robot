@@ -337,7 +337,7 @@ Visualization Manager:
       Median window: 5
       Min Value: 0
       Name: Logitech_C270_Camera
-      Normalize Range: false
+      Normalize Range: true
       Topic:
         Depth: 5
         Durability Policy: Volatile

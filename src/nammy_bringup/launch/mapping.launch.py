@@ -27,18 +27,16 @@ def generate_launch_description():
     ekf_params_file = os.path.join(bringup_pkg, 'config', 'ekf.yaml')
     rviz_config_file = os.path.join(desc_pkg, 'rviz', 'mapping.rviz')
 
-    lidar_present = os.path.exists('/dev/ydlidar') or os.path.exists('/dev/ttyUSB0')
-    default_sim_lidar = 'false' if lidar_present else 'true'
-
     # Arguments
     sim_hw_arg = DeclareLaunchArgument(
         'simulate_hardware',
         default_value='false',
         description='Simulate ESP32 motor controller fallback'
     )
+    # Default to physical LiDAR hardware (never launch simulation fallback unless explicitly requested)
     sim_lidar_arg = DeclareLaunchArgument(
         'simulate_lidar',
-        default_value=default_sim_lidar,
+        default_value='false',
         description='Simulate 360-degree laser scan fallback if physical lidar is not connected'
     )
     default_serial = '/dev/nammy_esp32' if os.path.exists('/dev/nammy_esp32') else '/dev/ttyACM0'

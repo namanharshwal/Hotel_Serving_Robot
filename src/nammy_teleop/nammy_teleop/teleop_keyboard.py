@@ -133,13 +133,13 @@ def main():
     active_v_dir = 0.0
     active_w_dir = 0.0
 
-    # Hold-to-drive (Deadman) mode enabled by default to prevent runaways and jerks
-    deadman_mode = True
+    # Hold-to-drive timeout must be safely above Linux X11 500ms key repeat delay
+    deadman_mode = False   # Cruise/Latch mode default for smooth manual SLAM mapping
     last_key_time = time.time()
-    deadman_hold_timeout = 0.25  # Smooth 250ms decay if key is released
+    deadman_hold_timeout = 0.80  # 800ms ensures zero dropout during keyboard repeat
 
-    # Acceleration limits (m/s^2 and rad/s^2) for smooth jerk-free ramping
-    MAX_LIN_ACCEL = 0.50  # m/s^2 (smooth 0.24s ramp to 0.12 m/s)
+    # Acceleration limits (m/s^2 and rad/s^2) for buttery smooth motion without wheel jerk
+    MAX_LIN_ACCEL = 0.35  # m/s^2 (buttery smooth ~0.35s ramp to 0.12 m/s)
     MAX_ANG_ACCEL = MAX_LIN_ACCEL / HALF_TRACK_M  # Exactly matched angular acceleration
 
     domain_id = os.environ.get('ROS_DOMAIN_ID', '0')
