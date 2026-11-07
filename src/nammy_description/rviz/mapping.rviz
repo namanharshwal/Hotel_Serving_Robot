@@ -345,6 +345,13 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /camera/image_raw
       Value: true
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 0.3
+      Name: IMU_Sensor_Axes
+      Radius: 0.015
+      Reference Frame: imu_link
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

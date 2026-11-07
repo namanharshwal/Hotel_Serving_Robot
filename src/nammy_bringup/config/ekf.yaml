@@ -38,9 +38,9 @@ ekf_filter_node:
     # Wheel Odometry from ESP32-S3 Hardware Bridge
     odom0: /odom
     odom0_config: [true,  true,  false,
-                   false, false, true,
+                   false, false, false, # Yaw pose from wheel odometry is FALSE (avoids locking heading or fighting IMU)
                    true,  true,  false,
-                   false, false, true,
+                   false, false, true,  # Yaw rate from wheel odometry is TRUE
                    false, false, false]
     odom0_differential: false
     odom0_relative: false
@@ -54,7 +54,7 @@ ekf_filter_node:
                             0.0,   0.0, 1e6,      0.0,    0.0, 0.0,
                             0.0,   0.0,    0.0, 1e6,      0.0, 0.0,
                             0.0,   0.0,    0.0,   0.0,  1e6,   0.0,
-                            0.0,   0.0,    0.0,   0.0,    0.0, 0.05]
+                            0.0,   0.0,    0.0,   0.0,    0.0, 0.5]
     
     odom0_twist_covariance: [0.05, 0.0, 0.0, 0.0, 0.0, 0.0,
                              0.0, 0.05, 0.0, 0.0, 0.0, 0.0,
@@ -63,19 +63,19 @@ ekf_filter_node:
                              0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.05]
 
-    # Bosch BNO055 9-DOF IMU
+    # Bosch BNO055 9-DOF IMU (Master heading authority)
     imu0: /imu/data
     imu0_config: [false, false, false,
-                  false, false, true,
+                  false, false, true,   # Absolute yaw from IMU
                   false, false, false,
-                  false, false, true,
+                  false, false, true,   # Yaw rate from IMU
                   false, false, false]  # Disabled linear acceleration to prevent stationary drift
-    imu0_differential: true
-    imu0_relative: false
+    imu0_differential: false            # Direct orientation fusion without integration drift
+    imu0_relative: true                 # Zeroes orientation at startup and fuses relative rotation matching odom frame
     imu0_queue_depth: 10
-    imu0_pose_rejection_threshold: 0.8
-    imu0_twist_rejection_threshold: 0.8
-    imu0_linear_acceleration_rejection_threshold: 0.8
+    imu0_pose_rejection_threshold: 5.0  # Prevents false rejection of sharp rotations
+    imu0_twist_rejection_threshold: 5.0
+    imu0_linear_acceleration_rejection_threshold: 5.0
     imu0_remove_gravitational_acceleration: true
 
     # Covariance for IMU
@@ -84,7 +84,7 @@ ekf_filter_node:
                            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
                            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
                            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
-                           0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+                           0.0, 0.0, 0.0, 0.0, 0.0, 0.05]
     
     imu0_twist_covariance: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                             0.0, 1.0, 0.0, 0.0, 0.0, 0.0,

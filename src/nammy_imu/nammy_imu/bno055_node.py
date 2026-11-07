@@ -162,19 +162,23 @@ class BNO055Node(Node):
             
             norm = (w*w + x*x + y*y + z*z) ** 0.5
             if norm > 0.0:
+                # Bosch BNO055 sensor fusion engine outputs passive/conjugate quaternion (world relative to sensor).
+                # Convert to active ROS REP-103 ENU rotation (sensor relative to world) by applying
+                # quaternion conjugate q* = [w, -x, -y, -z] so positive CCW turn yields positive yaw (+z).
                 imu_msg.orientation.w = float(w / norm)
-                imu_msg.orientation.x = float(x / norm)
-                imu_msg.orientation.y = float(y / norm)
-                imu_msg.orientation.z = float(z / norm)
+                imu_msg.orientation.x = float(-x / norm)
+                imu_msg.orientation.y = float(-y / norm)
+                imu_msg.orientation.z = float(-z / norm)
             else:
                 return
 
             # Read Angular Velocity (Gyro: X, Y, Z int16, 1 LSB = 1/16 rad/s)
+            # Apply matching sign convention to align with REP-103 right-hand rule
             gyr_data = self.bus.read_i2c_block_data(self.addr, BNO055_GYR_DATA_X_LSB, 6)
             gx, gy, gz = struct.unpack('<hhh', bytes(gyr_data))
-            imu_msg.angular_velocity.x = float(gx / 900.0)
-            imu_msg.angular_velocity.y = float(gy / 900.0)
-            imu_msg.angular_velocity.z = float(gz / 900.0)
+            imu_msg.angular_velocity.x = float(-gx / 900.0)
+            imu_msg.angular_velocity.y = float(-gy / 900.0)
+            imu_msg.angular_velocity.z = float(-gz / 900.0)
 
             # Read Linear Acceleration (Accel: X, Y, Z int16, 1 LSB = 1/100 m/s^2)
             acc_data = self.bus.read_i2c_block_data(self.addr, BNO055_ACC_DATA_X_LSB, 6)
