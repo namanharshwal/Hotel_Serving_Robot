@@ -47,6 +47,7 @@ class ESP32HardwareBridge(Node):
         self.declare_parameter('max_angular_velocity', 2.5)  # Max angular velocity rad/s
         self.declare_parameter('max_linear_acceleration', 0.35)  # Max linear acceleration m/s^2 (Smooth S-curve ramp)
         self.declare_parameter('max_angular_acceleration', 1.0)  # Max angular acceleration rad/s^2
+        self.declare_parameter('invert_encoders', True)          # Invert encoder polarities to align with ROS REP-103 (+X forward)
 
         # Retrieve Parameters
         self.port_name = self.get_parameter('serial_port').get_parameter_value().string_value
@@ -63,6 +64,7 @@ class ESP32HardwareBridge(Node):
         self.max_w = self.get_parameter('max_angular_velocity').get_parameter_value().double_value
         self.max_lin_accel = self.get_parameter('max_linear_acceleration').get_parameter_value().double_value
         self.max_ang_accel = self.get_parameter('max_angular_acceleration').get_parameter_value().double_value
+        self.invert_encoders = self.get_parameter('invert_encoders').get_parameter_value().bool_value
 
         self.cb_group = ReentrantCallbackGroup()
 
@@ -329,10 +331,11 @@ class ESP32HardwareBridge(Node):
             if msg_type == MSG_TELEMETRY:
                 telemetry = unpack_telemetry(payload)
                 if telemetry:
-                    self.left_pos = telemetry.left_pos_rad
-                    self.right_pos = telemetry.right_pos_rad
-                    self.left_vel = telemetry.left_vel_rad_s
-                    self.right_vel = telemetry.right_vel_rad_s
+                    enc_sign = -1.0 if self.invert_encoders else 1.0
+                    self.left_pos = enc_sign * telemetry.left_pos_rad
+                    self.right_pos = enc_sign * telemetry.right_pos_rad
+                    self.left_vel = enc_sign * telemetry.left_vel_rad_s
+                    self.right_vel = enc_sign * telemetry.right_vel_rad_s
                     self.battery_voltage = telemetry.battery_volts
                     self.sonar_front_m = telemetry.sonar_front_m
                     self.sonar_left_m = telemetry.sonar_left_m
