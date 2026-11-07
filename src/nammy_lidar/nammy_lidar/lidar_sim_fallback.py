@@ -24,11 +24,11 @@ class LidarSimFallback(Node):
         self.samples = self.get_parameter('samples').value
         self.room_r = self.get_parameter('sim_room_radius').value
 
-        # Best effort QoS matching real YDLIDAR and SLAM Toolbox
+        # Reliable QoS ensures 100% compatibility with both Reliable and Best-Effort subscribers
         scan_qos = QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
-            depth=5,
-            reliability=ReliabilityPolicy.BEST_EFFORT,
+            depth=10,
+            reliability=ReliabilityPolicy.RELIABLE,
             durability=DurabilityPolicy.VOLATILE
         )
         self.scan_pub = self.create_publisher(LaserScan, 'scan', scan_qos)

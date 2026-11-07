@@ -75,30 +75,46 @@ class BNO055Node(Node):
             self.hardware_ready = False
             return False
 
+        # Ensure previous bus file descriptor is released
+        if self.bus is not None:
+            try:
+                self.bus.close()
+            except Exception:
+                pass
+            self.bus = None
+
+        new_bus = None
         try:
-            self.bus = smbus2.SMBus(self.bus_num)
-            chip_id = self.bus.read_byte_data(self.addr, BNO055_CHIP_ID_ADDR)
+            new_bus = smbus2.SMBus(self.bus_num)
+            chip_id = new_bus.read_byte_data(self.addr, BNO055_CHIP_ID_ADDR)
             if chip_id != 0xA0:
-                self.get_logger().warn(f"Unexpected Chip ID 0x{chip_id:02X} on /dev/i2c-{self.bus_num} at 0x{self.addr:02X}.")
+                self.get_logger().warn(f"Unexpected Chip ID 0x{chip_id:02X} on /dev/i2c-{self.bus_num} at 0x{self.addr:02X}.", throttle_duration_sec=10.0)
 
             # 1. Switch to CONFIG mode to configure chip
-            self.bus.write_byte_data(self.addr, BNO055_OPR_MODE_ADDR, OPERATION_MODE_CONFIG)
+            new_bus.write_byte_data(self.addr, BNO055_OPR_MODE_ADDR, OPERATION_MODE_CONFIG)
             time.sleep(0.025)
 
             # 2. Set Normal Power mode
-            self.bus.write_byte_data(self.addr, BNO055_PWR_MODE_ADDR, 0x00)
+            new_bus.write_byte_data(self.addr, BNO055_PWR_MODE_ADDR, 0x00)
             time.sleep(0.010)
 
             # 3. Switch to IMU mode (0x08) - relative Gyro + Accel fusion matching hover_ws
             # This completely avoids magnetic distortion from AT120 high-current motors
-            self.bus.write_byte_data(self.addr, BNO055_OPR_MODE_ADDR, OPERATION_MODE_IMU)
+            new_bus.write_byte_data(self.addr, BNO055_OPR_MODE_ADDR, OPERATION_MODE_IMU)
             time.sleep(0.030)
 
+            self.bus = new_bus
             self.get_logger().info(f"[SUCCESS] Connected to Bosch BNO055 IMU on /dev/i2c-{self.bus_num} @ 0x{self.addr:02X} (Mode: IMU 0x08)")
             self.hardware_ready = True
             return True
         except Exception as e:
-            self.get_logger().warn(f"Could not connect to BNO055 on /dev/i2c-{self.bus_num} @ 0x{self.addr:02X}: {e}")
+            if new_bus is not None:
+                try:
+                    new_bus.close()
+                except Exception:
+                    pass
+            self.bus = None
+            self.get_logger().warn(f"Could not connect to BNO055 on /dev/i2c-{self.bus_num} @ 0x{self.addr:02X}: {e}", throttle_duration_sec=10.0)
             self.hardware_ready = False
             return False
 
@@ -165,8 +181,23 @@ class BNO055Node(Node):
             self.imu_pub.publish(imu_msg)
 
         except Exception as e:
-            self.get_logger().warn(f"BNO055 read glitch: {e}", throttle_duration_sec=3.0)
+            self.get_logger().warn(f"BNO055 read glitch: {e}", throttle_duration_sec=5.0)
+            if self.bus is not None:
+                try:
+                    self.bus.close()
+                except Exception:
+                    pass
+                self.bus = None
             self.hardware_ready = False
+
+    def destroy_node(self):
+        if self.bus is not None:
+            try:
+                self.bus.close()
+            except Exception:
+                pass
+            self.bus = None
+        super().destroy_node()
 
 def main(args=None):
     rclpy.init(args=args)

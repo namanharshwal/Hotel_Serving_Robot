@@ -99,18 +99,44 @@ class C270CameraNode(Node):
             self.cap = None
             return False
 
+    def generate_standby_frame(self):
+        """Generate animated synthetic HUD standby frame when hardware device is pending."""
+        import numpy as np
+        frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        frame[:] = (22, 20, 20)
+        # Clean subtle grid
+        for y in range(0, self.height, 40):
+            cv2.line(frame, (0, y), (self.width, y), (35, 30, 30), 1)
+        for x in range(0, self.width, 40):
+            cv2.line(frame, (x, 0), (x, self.height), (35, 30, 30), 1)
+        # Reticle
+        cx, cy = self.width // 2, self.height // 2
+        cv2.drawMarker(frame, (cx, cy), (0, 255, 136), cv2.MARKER_CROSS, 36, 1)
+        cv2.circle(frame, (cx, cy), 50, (0, 255, 136), 1)
+        # Status text
+        t_str = time.strftime("%H:%M:%S")
+        cv2.putText(frame, "NAMMY ROBOT VISION - LOGITECH C270", (25, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 200), 2)
+        cv2.putText(frame, "Device Standby: Awaiting /dev/video0 (sudo modprobe uvcvideo)", (25, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 220, 255), 1)
+        cv2.putText(frame, f"FPS: {self.framerate:.0f} | Time: {t_str} | Res: {self.width}x{self.height}", (25, self.height - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
+        return frame
+
     def capture_and_publish(self):
+        frame = None
         if self.cap is None or not self.cap.isOpened():
             if self.auto_reconnect:
                 self.connect_camera()
-            return
+            if self.cap is None or not self.cap.isOpened():
+                frame = self.generate_standby_frame()
 
-        ret, frame = self.cap.read()
-        if not ret or frame is None:
-            self.get_logger().warn("Empty frame captured from camera. Reconnecting...")
-            self.cap.release()
-            self.cap = None
-            return
+        if frame is None:
+            ret, captured = self.cap.read()
+            if not ret or captured is None:
+                self.get_logger().warn("Empty frame captured from camera. Reconnecting...", throttle_duration_sec=3.0)
+                self.cap.release()
+                self.cap = None
+                frame = self.generate_standby_frame()
+            else:
+                frame = captured
 
         now = self.get_clock().now()
         timestamp = now.to_msg()
