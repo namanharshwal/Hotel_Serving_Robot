@@ -38,11 +38,12 @@ slam_toolbox:
     do_loop_closing: true               # Enable graph loop closure optimization
     loop_closure_threshold: 0.10        # Matching threshold for loop acceptance
     loop_closure_search_radius: 10.0    # Node search radius for potential loops (10 m)
-    debug_logging: false                # Non-verbose solver logging
+    debug_logging: true                 # Verbose solver logging for troubleshooting
     throttle_scans: 1                   # Process full 10 Hz scan stream (no skipping)
     transform_timeout: 0.50             # Generous TF lookup timeout for async executor
     map_start_at_dock: false
     map_start_pose: [0.0, 0.0, 0.0]
+    pose_topic: /odometry/filtered      # EKF filtered odometry pose input matching hover_ws
 
     # QoS Profile matching YDLIDAR /scan streaming
     qos_scan:

@@ -107,9 +107,9 @@ def generate_launch_description():
         ]
     )
 
-    # 3. SLAM Toolbox Online Async Node (delayed 4.5s for TF, EKF, and /scan stabilization, matching hover_ws)
+    # 3. SLAM Toolbox Online Async Node (delayed 8.0s for LiDAR spin-up, TF, EKF, and /scan stabilization, matching hover_ws)
     slam_toolbox_node = TimerAction(
-        period=4.5,
+        period=8.0,
         actions=[
             Node(
                 package='slam_toolbox',
