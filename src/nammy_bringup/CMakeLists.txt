@@ -9,7 +9,9 @@ install(
 )
 
 install(
-  PROGRAMS scripts/waypoint_follower.py
+  PROGRAMS
+    scripts/waypoint_follower.py
+    scripts/waypoint_collector.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

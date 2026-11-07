@@ -15,7 +15,7 @@ Copyright (c) 2026 Naman Harshwal. All rights reserved.
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
@@ -69,6 +69,11 @@ def generate_launch_description():
         'autostart',
         default_value='true',
         description='Automatically activate Nav2 lifecycle nodes'
+    )
+    interactive_waypoints_arg = DeclareLaunchArgument(
+        'interactive_waypoints',
+        default_value='true',
+        description='Launch interactive xterm terminal for RViz Publish Point waypoint collection and mission execution'
     )
 
     # 1. Base Robot Bringup (ESP32 hardware, BNO055 IMU, C270 Camera, 4x US-100 Sonars, YDLIDAR G2)
@@ -190,6 +195,28 @@ def generate_launch_description():
         ]
     )
 
+    # 8. Interactive Waypoint Navigator Window (opens xterm window on DISPLAY)
+    waypoint_collector_process = TimerAction(
+        period=12.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    'xterm',
+                    '-title', 'Nammy Robot Waypoint Navigator',
+                    '-geometry', '76x26+880+240',
+                    '-fa', 'Monospace',
+                    '-fs', '11',
+                    '-bg', '#181b20',
+                    '-fg', '#00e5ff',
+                    '-e', 'bash', '-c',
+                    'source /opt/ros/humble/setup.bash && [ -f "$HOME/Documents/hover_ws/install/setup.bash" ] && source "$HOME/Documents/hover_ws/install/setup.bash"; [ -f "$HOME/Documents/nammy_ws/install/setup.bash" ] && source "$HOME/Documents/nammy_ws/install/setup.bash"; export ROS_DOMAIN_ID=0 && ros2 run nammy_bringup waypoint_collector.py; exec bash'
+                ],
+                condition=IfCondition(LaunchConfiguration('interactive_waypoints')),
+                output='screen'
+            )
+        ]
+    )
+
     return LaunchDescription([
         map_arg,
         sim_hw_arg,
@@ -198,11 +225,13 @@ def generate_launch_description():
         i2c_bus_arg,
         launch_rviz_arg,
         autostart_arg,
+        interactive_waypoints_arg,
         robot_bringup,
         ekf_node,
         map_server_node,
         amcl_node,
         lifecycle_localization,
         nav2_stack,
-        rviz_node
+        rviz_node,
+        waypoint_collector_process
     ])
