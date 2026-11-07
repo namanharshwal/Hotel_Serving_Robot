@@ -25,8 +25,8 @@ esp32_hardware_bridge:
     simulate_hardware: false   # Auto-fallback to simulation if USB serial disconnected
     max_linear_velocity: 1.2   # Max linear velocity (m/s)
     max_angular_velocity: 2.5  # Max angular velocity (rad/s)
-    max_linear_acceleration: 0.35  # S-curve linear slew limit (m/s^2) for smooth motion
-    max_angular_acceleration: 1.0  # S-curve angular slew limit (rad/s^2)
+    max_linear_acceleration: 4.0   # Snappy real-time instant linear response (4.0 m/s^2)
+    max_angular_acceleration: 8.0  # Snappy real-time instant angular response (8.0 rad/s^2)
 
 # 2. SmartElex 30S & AT120 Motor Manager (nammy_motors)
 motor_manager:
