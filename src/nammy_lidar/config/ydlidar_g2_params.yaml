@@ -35,7 +35,7 @@
     # QoS Profile tuned for real-time laser scan delivery to SLAM & RViz
     qos_overrides:
       /scan:
-        reliability: reliable
+        reliability: best_effort
         history: keep_last
-        depth: 10
+        depth: 5
         durability: volatile

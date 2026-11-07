@@ -22,7 +22,7 @@ class C270CameraNode(Node):
         self.declare_parameter('frame_id', 'camera_optical_frame')
         self.declare_parameter('image_width', 640)
         self.declare_parameter('image_height', 480)
-        self.declare_parameter('framerate', 30.0)
+        self.declare_parameter('framerate', 10.0)
         self.declare_parameter('camera_name', 'c270_logitech_camera')
         self.declare_parameter('auto_reconnect', True)
 
