@@ -14,7 +14,7 @@ Coordinates and launches all component packages:
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
@@ -89,6 +89,12 @@ def generate_launch_description():
         'publish_odom_tf',
         default_value='true',
         description='Publish odom->base_footprint TF from base bridge (set false when EKF is active)'
+    )
+
+    teleop_arg = DeclareLaunchArgument(
+        'teleop',
+        default_value='false',
+        description='Launch interactive keyboard teleoperation in an xterm window on DISPLAY'
     )
 
     # 1. Robot State Publisher (3D URDF)
@@ -190,6 +196,28 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('launch_rviz'))
     )
 
+    # 10. Interactive Keyboard Teleoperation Window (opens in xterm window on DISPLAY)
+    teleop_process = TimerAction(
+        period=2.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    'xterm',
+                    '-title', 'Nammy Robot Teleop Control',
+                    '-geometry', '88x26+40+40',
+                    '-fa', 'Monospace',
+                    '-fs', '11',
+                    '-bg', '#1c1c1c',
+                    '-fg', '#00ff88',
+                    '-e', 'bash', '-c',
+                    'source /opt/ros/humble/setup.bash && [ -f "$HOME/Documents/hover_ws/install/setup.bash" ] && source "$HOME/Documents/hover_ws/install/setup.bash"; [ -f "$HOME/Documents/nammy_ws/install/setup.bash" ] && source "$HOME/Documents/nammy_ws/install/setup.bash"; export ROS_DOMAIN_ID=0 && ros2 run nammy_teleop teleop_keyboard; exec bash'
+                ],
+                condition=IfCondition(LaunchConfiguration('teleop')),
+                output='screen'
+            )
+        ]
+    )
+
     return LaunchDescription([
         sim_arg,
         port_arg,
@@ -200,6 +228,7 @@ def generate_launch_description():
         camera_arg,
         rviz_arg,
         publish_odom_tf_arg,
+        teleop_arg,
         robot_state_pub_node,
         base_bridge_node,
         motor_manager_node,
@@ -208,5 +237,6 @@ def generate_launch_description():
         sonar_node,
         lidar_launch,
         camera_node,
-        rviz_node
+        rviz_node,
+        teleop_process
     ])
