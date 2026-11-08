@@ -97,7 +97,7 @@ def generate_launch_description():
 
     # 2. Extended Kalman Filter (robot_localization EKF)
     ekf_node = TimerAction(
-        period=2.5,
+        period=2.0,
         actions=[
             Node(
                 package='robot_localization',
@@ -114,7 +114,7 @@ def generate_launch_description():
 
     # 3. Nav2 Map Server
     map_server_node = TimerAction(
-        period=4.5,
+        period=3.5,
         actions=[
             Node(
                 package='nav2_map_server',
@@ -131,7 +131,7 @@ def generate_launch_description():
 
     # 4. AMCL Probabilistic Localization
     amcl_node = TimerAction(
-        period=6.0,
+        period=5.0,
         actions=[
             Node(
                 package='nav2_amcl',
@@ -148,7 +148,7 @@ def generate_launch_description():
 
     # 5. Localization Lifecycle Manager
     lifecycle_localization = TimerAction(
-        period=7.5,
+        period=6.5,
         actions=[
             Node(
                 package='nav2_lifecycle_manager',
@@ -165,7 +165,7 @@ def generate_launch_description():
 
     # 6. Full Nav2 Navigation Stack (DWB Local Planner, Navfn Global Planner, Costmaps, BT Navigator)
     nav2_stack = TimerAction(
-        period=9.0,
+        period=9.5,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -182,7 +182,7 @@ def generate_launch_description():
 
     # 7. RViz2 Visualizer with Navigation 2 UI
     rviz_node = TimerAction(
-        period=11.0,
+        period=13.5,
         actions=[
             Node(
                 package='rviz2',
@@ -197,7 +197,7 @@ def generate_launch_description():
 
     # 8. Interactive Waypoint Navigator Window (opens xterm window on DISPLAY)
     waypoint_collector_process = TimerAction(
-        period=12.0,
+        period=15.5,
         actions=[
             ExecuteProcess(
                 cmd=[
