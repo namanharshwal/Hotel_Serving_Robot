@@ -36,7 +36,7 @@ echo "          NAMMY ROBOT - PHYSICAL MANUAL CONTROL (TELEOP)             "
 echo "======================================================================"
 echo " Mode: Physical Hardware ONLY (Zero Simulation, Zero RViz)"
 echo " Hardware Port: /dev/nammy_esp32"
-echo " IMU I2C Bus:   /dev/i2c-7 (Pin 3=SDA, Pin 5=SCL)"
+echo " IMU I2C Bus:   /dev/i2c-7 (Pin 27=SDA, Pin 28=SCL)"
 echo " Network:       ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"
 echo "======================================================================"
 

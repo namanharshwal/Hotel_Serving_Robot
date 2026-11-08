@@ -1,0 +1,84 @@
+# ==============================================================================
+# SLAM Toolbox Online Async Mapping Configuration for Nammy Robot Platform
+# Author & Copyright: Naman Harshwal <namanharshwal@gmail.com>
+# License: Apache-2.0
+# ==============================================================================
+
+slam_toolbox:
+  ros__parameters:
+
+    # Plugin params (Ceres Solver matching hover_ws)
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # Frame Identifiers
+    odom_frame: odom                    # Wheel/EKF odometry frame
+    map_frame: map                      # SLAM global reference frame
+    base_frame: base_footprint          # Robot footprint frame at ground level
+    scan_topic: /scan                   # LaserScan topic published by YDLIDAR G2
+    use_sim_time: false
+
+    # Mapping Operation Mode
+    mode: mapping                       # Online asynchronous mapping mode
+    map_update_interval: 1.0            # Interval in seconds to update /map topic
+    transform_publish_period: 0.02      # 50 Hz map -> odom TF broadcast
+    resolution: 0.05                    # 5 cm per occupancy grid pixel
+    min_laser_range: 0.12               # Minimum laser range filter (12 cm)
+    max_laser_range: 12.0               # Maximum laser range limit (12 m)
+    minimum_time_interval: 0.10         # Minimum time between scan processing (s)
+    transform_timeout: 0.50             # Generous TF lookup timeout for async executor
+    tf_buffer_duration: 30.0            # Cache TF buffer duration (s)
+    stack_size_to_use: 40000000         # Ceres solver stack allocation (40MB)
+    enable_interactive_mode: true
+
+    # Scan Matching & Keyframe Constraints (Zero Distortion Tuning)
+    use_scan_matching: true             # Full laser scan-to-map correlation matching
+    use_scan_barycenter: true           # Barycentric center of mass alignment
+    minimum_travel_distance: 0.25       # Keyframe travel distance (25 cm)
+    minimum_travel_heading: 0.15        # Keyframe heading rotation (~8.6 deg)
+    scan_buffer_size: 15                # Scan history buffer size for local consistency
+    scan_buffer_maximum_scan_distance: 12.0
+    link_match_minimum_response_fine: 0.15
+    link_scan_maximum_distance: 1.50
+
+    # Loop Closure Constraints
+    do_loop_closing: true               # Enable graph loop closure optimization
+    loop_match_minimum_chain_size: 10   # Minimum sequential nodes for loop candidate
+    loop_match_maximum_variance_covariance: 0.30
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.45
+    loop_closure_threshold: 0.10        # Matching threshold for loop acceptance
+    loop_closure_search_radius: 10.0    # Node search radius for potential loops (10 m)
+    debug_logging: false                # Clean solver logging
+    throttle_scans: 1                   # Process full 10 Hz scan stream (no skipping)
+    map_start_at_dock: false
+    map_start_pose: [0.0, 0.0, 0.0]
+    pose_topic: /odometry/filtered      # EKF filtered odometry pose input
+
+    # QoS Profile matching YDLIDAR /scan streaming (Reliable)
+    qos_scan:
+      reliability: reliable
+      history: keep_last
+      depth: 10
+      durability: volatile
+
+    # Correlation Matcher Parameters (tuned for YDLIDAR 360-degree scan)
+    correlation_search_space_dimension: 0.50   # Scan matching window (50 cm)
+    correlation_search_space_resolution: 0.01  # Fine search grid resolution (1 cm)
+    correlation_search_space_smear_deviation: 0.10
+    loop_search_space_dimension: 8.00          # Loop detection window (8 m)
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+    distance_variance_penalty: 0.50            # Penalize odometry translation errors
+    angle_variance_penalty: 1.00               # Penalize heading drift
+    fine_search_angle_offset: 0.00349          # ~0.2 deg fine angle precision
+    coarse_search_angle_offset: 0.349          # ~20 deg coarse search
+    coarse_angle_resolution: 0.0349            # ~2 deg coarse angle resolution
+    minimum_angular_criteria: 0.01             # Minimum turn for node addition
+    minimum_angle_penalty: 0.90                # Strong angle alignment weighting
+    minimum_distance_penalty: 0.50
+    use_response_expansion: true               # Enhanced convergence in large spaces
