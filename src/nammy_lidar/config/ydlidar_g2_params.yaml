@@ -20,12 +20,12 @@
     sample_rate: 9              # ~2880 points/revolution
     abnormal_check_count: 4
     fixed_resolution: true      # Consistent angular resolution across scans
-    reversion: true             # 180-degree hardware offset alignment for YDLIDAR G2
-    inverted: true              # Upright top chassis mounting orientation
+    reversion: false            # Standard forward zero alignment
+    inverted: false             # Standard counter-clockwise REP-103 angular direction
     auto_reconnect: true        # Automatic serial port recovery upon glitch
     support_motor_dtr: true     # Enable DTR line to start/stop the spinning motor
-    angle_max: 90.0             # Front 180-degree scan (+90.0 deg / left boundary)
-    angle_min: -90.0            # Front 180-degree scan (-90.0 deg / right boundary)
+    angle_max: 180.0            # Full 360-degree panoramic scan (+180.0 deg)
+    angle_min: -180.0           # Full 360-degree panoramic scan (-180.0 deg)
     range_max: 12.0             # 12.0m max range limit
     range_min: 0.12             # 12cm minimum range cutoff
     frequency: 10.0             # 10.0 Hz scan rotation frequency

@@ -11,11 +11,12 @@ amcl:
   ros__parameters:
     use_sim_time: False
     set_initial_pose: true
-    initial_pose.x: 0.0
-    initial_pose.y: 0.0
-    initial_pose.z: 0.0
-    initial_pose.yaw: 0.0
-    always_reset_initial_pose: false
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
+    always_reset_initial_pose: true
     alpha1: 0.05
     alpha2: 0.05
     alpha3: 0.05
@@ -32,7 +33,7 @@ amcl:
     laser_max_range: 12.0
     laser_min_range: 0.12
     laser_model_type: "likelihood_field"
-    max_beams: 120
+    max_beams: 180
     max_particles: 1500
     min_particles: 300
     odom_frame_id: "odom"
@@ -45,7 +46,7 @@ amcl:
     save_pose_rate: 0.5
     sigma_hit: 0.15
     tf_broadcast: true
-    transform_tolerance: 0.5
+    transform_tolerance: 1.0
     update_min_a: 0.10
     update_min_d: 0.08
     z_hit: 0.85
@@ -208,7 +209,7 @@ local_costmap:
       
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
+        cost_scaling_factor: 4.0
         inflation_radius: 0.35
         
       obstacle_layer:
@@ -248,7 +249,7 @@ global_costmap:
         
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
+        cost_scaling_factor: 4.0
         inflation_radius: 0.35
         
       always_send_full_costmap: True
