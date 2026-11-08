@@ -94,6 +94,7 @@ def generate_launch_description():
             'serial_port': LaunchConfiguration('serial_port'),
             'i2c_bus': LaunchConfiguration('i2c_bus'),
             'publish_odom_tf': 'false',
+            'enable_imu_heading_hold': 'false',
             'launch_rviz': 'false',
             'launch_lidar': 'true',
             'launch_camera': 'false',

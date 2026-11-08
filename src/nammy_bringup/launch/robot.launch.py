@@ -97,6 +97,12 @@ def generate_launch_description():
         description='Launch interactive keyboard teleoperation in an xterm window on DISPLAY'
     )
 
+    heading_hold_arg = DeclareLaunchArgument(
+        'enable_imu_heading_hold',
+        default_value='true',
+        description='Enable closed-loop IMU heading hold in hardware bridge'
+    )
+
     # 1. Robot State Publisher (3D URDF)
     robot_state_pub_node = Node(
         package='robot_state_publisher',
@@ -118,6 +124,7 @@ def generate_launch_description():
                 'simulate_hardware': LaunchConfiguration('simulate_hardware'),
                 'serial_port': LaunchConfiguration('serial_port'),
                 'publish_tf': LaunchConfiguration('publish_odom_tf'),
+                'enable_imu_heading_hold': LaunchConfiguration('enable_imu_heading_hold'),
             }
         ]
     )
@@ -229,6 +236,7 @@ def generate_launch_description():
         rviz_arg,
         publish_odom_tf_arg,
         teleop_arg,
+        heading_hold_arg,
         robot_state_pub_node,
         base_bridge_node,
         motor_manager_node,

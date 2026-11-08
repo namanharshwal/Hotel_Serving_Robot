@@ -295,15 +295,15 @@ Visualization Manager:
           Frame: Local
           Offset: 1
           Scale: 1
-          Value: true
+          Value: false
         Position:
           Alpha: 0.3
           Color: 204; 51; 204
           Scale: 1
-          Value: true
-        Value: true
+          Value: false
+        Value: false
       Enabled: true
-      Keep: 100
+      Keep: 1
       Name: Filtered_Odometry
       Position Tolerance: 0.1
       Shape:
