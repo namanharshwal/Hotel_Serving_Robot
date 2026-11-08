@@ -164,12 +164,12 @@ Visualization Manager:
     - Alpha: 0.35
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
-      Draw Behind: false
-      Enabled: true
+      Draw Behind: true
+      Enabled: false
       Name: Global_Costmap
       Topic:
         Depth: 5
-        Durability Policy: Volatile
+        Durability Policy: Transient Local
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
@@ -179,18 +179,18 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /global_costmap/costmap_updates
+        Value: ""
       Use Timestamp: false
-      Value: true
-    - Alpha: 0.55
+      Value: false
+    - Alpha: 0.50
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
-      Draw Behind: false
+      Draw Behind: true
       Enabled: true
       Name: Local_Costmap
       Topic:
         Depth: 5
-        Durability Policy: Volatile
+        Durability Policy: Transient Local
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
@@ -200,7 +200,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /local_costmap/costmap_updates
+        Value: ""
       Use Timestamp: false
       Value: true
     - Alpha: 1

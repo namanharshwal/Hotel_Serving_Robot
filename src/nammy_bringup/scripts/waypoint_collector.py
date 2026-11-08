@@ -256,7 +256,8 @@ class WaypointCollectorNode(Node):
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
-        curr_idx = getattr(feedback, 'current_pose', 0)
+        poses_remaining = getattr(feedback, 'number_of_poses_remaining', 0)
+        curr_idx = max(0, len(self.waypoints) - poses_remaining)
         dist = getattr(feedback, 'distance_remaining', 0.0)
         if curr_idx != self.active_wp_idx:
             self.active_wp_idx = curr_idx
