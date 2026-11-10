@@ -36,12 +36,12 @@ class SonarFusionNode(Node):
         }
 
         # Sensor positions relative to base_link (x, y, z, yaw)
-        # Matches nammy_robot.urdf.xacro exactly!
+        # Matches nammy_robot.urdf.xacro: 3 front bumper sensors + 1 backside sensor!
         self.sensor_transforms = {
-            'front': (0.235,  0.000, 0.060, 0.0),
-            'left':  (0.000,  0.165, 0.060, math.pi / 2.0),
-            'right': (0.000, -0.165, 0.060, -math.pi / 2.0),
-            'rear':  (-0.235, 0.000, 0.060, math.pi)
+            'front': (0.250,  0.000, 0.035, 0.0),               # Front-Center (0 deg)
+            'left':  (0.225,  0.125, 0.035, math.pi / 6.0),    # Front-Left (+30 deg outward)
+            'right': (0.225, -0.125, 0.035, -math.pi / 6.0),   # Front-Right (-30 deg outward)
+            'rear':  (-0.250, 0.000, 0.035, math.pi)           # Backside / Rear (180 deg)
         }
 
         # Subscribers

@@ -42,11 +42,11 @@ def print_banner():
     print("     NAMMY ROBOT - 4x US-100 ULTRASONIC SENSOR VERIFICATION SUITE      ")
     print("     Author & Sole Developer: Naman Harshwal <namanharshwal@gmail.com> ")
     print("=" * 78)
-    print(" HARDWARE CONNECTION MATRIX (via TXS0108E 3.3V <-> 5.0V Level Shifter):")
-    print("   • FRONT: Trig -> ESP32 GPIO 8  (A1/B1) | Echo -> ESP32 GPIO 9  (A2/B2)")
-    print("   • LEFT:  Trig -> ESP32 GPIO 10 (A3/B3) | Echo -> ESP32 GPIO 11 (A4/B4)")
-    print("   • RIGHT: Trig -> ESP32 GPIO 12 (A5/B5) | Echo -> ESP32 GPIO 13 (A6/B6)")
-    print("   • REAR:  Trig -> ESP32 GPIO 14 (A7/B7) | Echo -> ESP32 GPIO 21 (A8/B8)")
+    print(" HARDWARE CONFIGURATION: 3x FRONT BUMPER SENSORS + 1x BACKSIDE SENSOR")
+    print("   • [CH 1] FRONT-CENTER: Trig -> GPIO 8  (A1/B1) | Echo -> GPIO 9  (A2/B2) [  0°]")
+    print("   • [CH 2] FRONT-LEFT:   Trig -> GPIO 10 (A3/B3) | Echo -> GPIO 11 (A4/B4) [+30°]")
+    print("   • [CH 3] FRONT-RIGHT:  Trig -> GPIO 12 (A5/B5) | Echo -> GPIO 13 (A6/B6) [-30°]")
+    print("   • [CH 4] BACKSIDE/REAR:Trig -> GPIO 14 (A7/B7) | Echo -> GPIO 21 (A8/B8) [180°]")
     print("   • LEVEL SHIFTER: VCCA = 3.3V, OE = 3.3V, VCCB = 5.0V, GND = Star Ground")
     print("   • US-100 JUMPERS: MUST BE REMOVED (OPEN) FOR TRIGGER/ECHO PULSE MODE")
     print("=" * 78)
@@ -110,10 +110,10 @@ def run_ros_verifier():
                 last_render = now
                 lines = []
                 sensors = [
-                    ('front', 'FRONT SONAR', 'Trig 8  / Echo 9 '),
-                    ('left',  'LEFT SONAR ', 'Trig 10 / Echo 11'),
-                    ('right', 'RIGHT SONAR', 'Trig 12 / Echo 13'),
-                    ('rear',  'REAR SONAR ', 'Trig 14 / Echo 21')
+                    ('front', 'FRONT-CENTER', 'Trig 8  / Echo 9  ( 0°)'),
+                    ('left',  'FRONT-LEFT  ', 'Trig 10 / Echo 11 (+30°)'),
+                    ('right', 'FRONT-RIGHT ', 'Trig 12 / Echo 13 (-30°)'),
+                    ('rear',  'BACKSIDE    ', 'Trig 14 / Echo 21 (180°)')
                 ]
                 for name, label, pins in sensors:
                     entry = node.ranges[name]
@@ -212,10 +212,10 @@ def run_serial_verifier():
                 last_render = now
                 lines = []
                 sensors = [
-                    ('front', 'FRONT SONAR', 'Trig 8  / Echo 9 ', t.sonar_front_m),
-                    ('left',  'LEFT SONAR ', 'Trig 10 / Echo 11', t.sonar_left_m),
-                    ('right', 'RIGHT SONAR', 'Trig 12 / Echo 13', t.sonar_right_m),
-                    ('rear',  'REAR SONAR ', 'Trig 14 / Echo 21', t.sonar_rear_m)
+                    ('front', 'FRONT-CENTER', 'Trig 8  / Echo 9  ( 0°)', t.sonar_front_m),
+                    ('left',  'FRONT-LEFT  ', 'Trig 10 / Echo 11 (+30°)', t.sonar_left_m),
+                    ('right', 'FRONT-RIGHT ', 'Trig 12 / Echo 13 (-30°)', t.sonar_right_m),
+                    ('rear',  'BACKSIDE    ', 'Trig 14 / Echo 21 (180°)', t.sonar_rear_m)
                 ]
                 for key, label, pins, val in sensors:
                     if val >= 4.45:
@@ -289,10 +289,10 @@ def run_quick_check():
     print("+" + "-"*76 + "+")
 
     sensor_info = [
-        ('FRONT SONAR', 'GPIO 8 / GPIO 9',   'front'),
-        ('LEFT SONAR',  'GPIO 10 / GPIO 11', 'left'),
-        ('RIGHT SONAR', 'GPIO 12 / GPIO 13', 'right'),
-        ('REAR SONAR',  'GPIO 14 / GPIO 21', 'rear'),
+        ('FRONT-CENTER', 'GPIO 8 / GPIO 9   ( 0°)', 'front'),
+        ('FRONT-LEFT  ', 'GPIO 10 / GPIO 11 (+30°)', 'left'),
+        ('FRONT-RIGHT ', 'GPIO 12 / GPIO 13 (-30°)', 'right'),
+        ('BACKSIDE    ', 'GPIO 14 / GPIO 21 (180°)', 'rear'),
     ]
 
     for label, pins, key in sensor_info:

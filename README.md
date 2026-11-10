@@ -507,20 +507,20 @@ The YDLIDAR G2 generates 9,000 range points per second at a continuous 230,400 b
 
 ### 5.3 Logic Level Shifter (TXS0108E) Wiring & Jumper Setup
 
-The TXS0108E bridges the 3.3V ESP32-S3 GPIO pins with the 5.0V US-100 ultrasonic sensors:
+The TXS0108E bridges the 3.3V ESP32-S3 GPIO pins with the 5.0V US-100 ultrasonic sensors (3 front-mounted bumper sensors for comprehensive forward acoustic coverage + 1 backside sensor for reverse protection):
 * **VCCA:** Connected to ESP32-S3 **3.3V** rail.
 * **VCCB:** Connected to DC-DC Buck 2 **5.1V** rail.
-* **OE (Output Enable):** Tied directly to **VCCA (3.3V)** with a $10	ext{ k}\Omega$ pull-up resistor.
+* **OE (Output Enable):** Tied directly to **VCCA (3.3V)** with a $10\text{ k}\Omega$ pull-up resistor.
 * **GND:** Connected to star ground.
-* **Channel Allocations:**
-  - `A1 / B1`: Front Sonar Trigger (`GPIO 8` $	o$ US-100 Front Trig)
-  - `A2 / B2`: Front Sonar Echo (`GPIO 9` $\leftarrow$ US-100 Front Echo)
-  - `A3 / B3`: Left Sonar Trigger (`GPIO 10` $	o$ US-100 Left Trig)
-  - `A4 / B4`: Left Sonar Echo (`GPIO 11` $\leftarrow$ US-100 Left Echo)
-  - `A5 / B5`: Right Sonar Trigger (`GPIO 12` $	o$ US-100 Right Trig)
-  - `A6 / B6`: Right Sonar Echo (`GPIO 13` $\leftarrow$ US-100 Right Echo)
-  - `A7 / B7`: Rear Sonar Trigger (`GPIO 14` $	o$ US-100 Rear Trig)
-  - `A8 / B8`: Rear Sonar Echo (`GPIO 21` $\leftarrow$ US-100 Rear Echo)
+* **Channel Allocations (3 Front + 1 Backside Configuration):**
+  - `A1 / B1`: Front-Center Sonar Trigger (`GPIO 8` $\to$ US-100 Front Trig, $0^\circ$)
+  - `A2 / B2`: Front-Center Sonar Echo (`GPIO 9` $\leftarrow$ US-100 Front Echo)
+  - `A3 / B3`: Front-Left Sonar Trigger (`GPIO 10` $\to$ US-100 Front-Left Trig, $+30^\circ$)
+  - `A4 / B4`: Front-Left Sonar Echo (`GPIO 11` $\leftarrow$ US-100 Front-Left Echo)
+  - `A5 / B5`: Front-Right Sonar Trigger (`GPIO 12` $\to$ US-100 Front-Right Trig, $-30^\circ$)
+  - `A6 / B6`: Front-Right Sonar Echo (`GPIO 13` $\leftarrow$ US-100 Front-Right Echo)
+  - `A7 / B7`: Backside / Rear Sonar Trigger (`GPIO 14` $\to$ US-100 Backside Trig, $180^\circ$)
+  - `A8 / B8`: Backside / Rear Sonar Echo (`GPIO 21` $\leftarrow$ US-100 Backside Echo)
 
 ---
 
