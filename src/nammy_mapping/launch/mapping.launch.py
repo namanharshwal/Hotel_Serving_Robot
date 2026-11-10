@@ -85,6 +85,11 @@ def generate_launch_description():
         default_value='true',
         description='Launch autonomous frontier exploration node to automatically map the environment'
     )
+    map_name_arg = DeclareLaunchArgument(
+        'map_name',
+        default_value='raj_sir_lab_room_1',
+        description='Map filename prefix to save in maps/ directory upon exploration completion'
+    )
     interactive_waypoints_arg = DeclareLaunchArgument(
         'interactive_waypoints',
         default_value='false',
@@ -209,7 +214,7 @@ def generate_launch_description():
                     '-bg', '#091e3a',
                     '-fg', '#38bdf8',
                     '-e', 'bash', '-c',
-                    'export ROS_DOMAIN_ID=0 && source /opt/ros/humble/setup.bash && [ -f "$HOME/Documents/hover_ws/install/setup.bash" ] && source "$HOME/Documents/hover_ws/install/setup.bash"; [ -f "$HOME/Documents/nammy_ws/install/setup.bash" ] && source "$HOME/Documents/nammy_ws/install/setup.bash"; ros2 run nammy_mapping frontier_explorer.py; exec bash'
+                    ['export ROS_DOMAIN_ID=0 && source /opt/ros/humble/setup.bash && [ -f "$HOME/Documents/hover_ws/install/setup.bash" ] && source "$HOME/Documents/hover_ws/install/setup.bash"; [ -f "$HOME/Documents/nammy_ws/install/setup.bash" ] && source "$HOME/Documents/nammy_ws/install/setup.bash"; ros2 run nammy_mapping frontier_explorer.py --ros-args -p map_save_name:=', LaunchConfiguration('map_name'), '; exec bash']
                 ],
                 condition=IfCondition(LaunchConfiguration('autonomous_explore')),
                 output='screen'
@@ -270,6 +275,7 @@ def generate_launch_description():
         launch_rviz_arg,
         autostart_arg,
         autonomous_explore_arg,
+        map_name_arg,
         interactive_waypoints_arg,
         teleop_arg,
         launch_camera_arg,

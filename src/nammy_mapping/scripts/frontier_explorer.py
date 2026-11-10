@@ -74,6 +74,7 @@ class AutonomousFrontierExplorer(Node):
         self.declare_parameter('replan_interval_sec', 3.0)     # Periodic frontier check interval
         self.declare_parameter('auto_start', True)             # Automatically start exploration on launch
         self.declare_parameter('return_home_on_finish', True)  # Return to starting dock when all frontiers mapped
+        self.declare_parameter('map_save_name', 'raj_sir_lab_room_1')  # Target map filename
 
         self.min_size = self.get_parameter('min_frontier_size').value
         self.robot_radius_cells = self.get_parameter('robot_radius_cells').value
@@ -83,6 +84,7 @@ class AutonomousFrontierExplorer(Node):
         self.replan_interval = self.get_parameter('replan_interval_sec').value
         self.auto_start = self.get_parameter('auto_start').value
         self.return_home = self.get_parameter('return_home_on_finish').value
+        self.map_save_name = self.get_parameter('map_save_name').value
 
         # TF Buffer and Listener for robot localization
         self.tf_buffer = tf2_ros.Buffer()
@@ -312,6 +314,7 @@ class AutonomousFrontierExplorer(Node):
                 self.get_logger().info("=" * 60)
                 self.state = "COMPLETED"
                 self.is_exploring = False
+                self.save_map()
 
                 if self.return_home and self.home_pose:
                     self.get_logger().info("Returning autonomously to Home Dock...")
@@ -377,6 +380,7 @@ class AutonomousFrontierExplorer(Node):
             self.get_logger().info("=" * 60)
             self.get_logger().info("MISSION SUCCESS: Robot has returned to its initial position!")
             self.get_logger().info("=" * 60)
+            self.save_map()
             return
 
         self.goals_completed += 1
@@ -384,6 +388,28 @@ class AutonomousFrontierExplorer(Node):
         self.active_target = None
         self.state = "EXPLORING"
         self.get_logger().info(f"Target successfully explored! Total goals completed: {self.goals_completed}")
+
+    def save_map(self):
+        """Save the current SLAM map directly to maps/ directory."""
+        import subprocess
+        maps_dir = os.path.expanduser('~/Documents/nammy_ws/maps')
+        os.makedirs(maps_dir, exist_ok=True)
+        name = self.get_parameter('map_save_name').value
+        map_path = os.path.join(maps_dir, name)
+        self.get_logger().info(f"[MAP SAVER] Saving map to: {map_path}.yaml / .pgm")
+        cmd = [
+            'ros2', 'run', 'nav2_map_server', 'map_saver_cli',
+            '-f', map_path,
+            '--ros-args',
+            '-p', 'save_map_timeout:=15.0',
+            '-p', 'free_thresh_default:=0.25',
+            '-p', 'occupied_thresh_default:=0.65'
+        ]
+        try:
+            subprocess.Popen(cmd)
+            self.get_logger().info(f"[MAP SAVER] Successfully dispatched map save for '{name}'!")
+        except Exception as e:
+            self.get_logger().error(f"[MAP SAVER] Error triggering map saver: {e}")
 
     def on_goal_failed(self):
         """Blacklist failed frontier and select alternative."""
@@ -535,6 +561,7 @@ def run_interactive_ui(node: AutonomousFrontierExplorer):
             print("   [\033[92;1ms\033[0m] Start / Resume Autonomous Exploration")
             print("   [\033[93;1mp\033[0m] Pause Exploration (Hold Position)")
             print("   [\033[94;1mr\033[0m] Return to Starting Home Dock Pose")
+            print(f"   [\033[92;1mm\033[0m] Save Map Now -> \033[1m{node.map_save_name}.yaml\033[0m")
             print("   [\033[95;1mc\033[0m] Clear Blacklist & Re-evaluate Frontiers")
             print("   [\033[91;1mq\033[0m] Quit Exploration Node")
             print("\033[96;1m" + "=" * 74 + "\033[0m")
@@ -552,6 +579,8 @@ def run_interactive_ui(node: AutonomousFrontierExplorer):
             node.is_exploring = False
             if node.home_pose:
                 node.dispatch_goal(node.home_pose[0], node.home_pose[1], node.home_pose[2], is_home=True)
+        elif key == 'm':
+            node.save_map()
         elif key == 'c':
             node.blacklisted_targets.clear()
         elif key == 'q':
