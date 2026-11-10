@@ -211,7 +211,7 @@ def generate_launch_description():
                 cmd=[
                     'xterm',
                     '-title', 'Nammy Robot Teleop Control',
-                    '-geometry', '88x26+40+40',
+                    '-geometry', '72x26+20+40',
                     '-fa', 'Monospace',
                     '-fs', '11',
                     '-bg', '#1c1c1c',

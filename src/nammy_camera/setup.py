@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'c270_camera_node = nammy_camera.c270_camera_node:main',
+            'camera_viewer = nammy_camera.camera_viewer:main',
         ],
     },
 )
