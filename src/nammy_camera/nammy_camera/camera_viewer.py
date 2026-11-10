@@ -4,12 +4,13 @@
 Nammy Robot - Live Camera Feed Viewer for Manual Teleop & Perception
 =============================================================================
 Description:
-  High-performance PyQt5 video viewer for the Logitech C270 HD camera.
+  High-performance resizable PyQt5 video viewer for Logitech C270 HD camera.
   Designed specifically for physical manual teleoperation:
-    - Real-time 30 FPS video streaming from /camera/image_raw
+    - Real-time video streaming from /camera/image_raw
     - Visual heading corridor and center crosshair for precise robot positioning
     - Real-time FPS, resolution, and ultrasonic obstacle proximity alerts
-    - Beautiful dark-themed aesthetic with automatic positioning next to teleop
+    - Standard window controls: fully resizable, minimizable, and maximizable
+    - Non-expanding custom VideoWidget preventing any layout auto-growth
 
 Maintainer: Naman Harshwal <namanharshwal@gmail.com>
 Copyright (c) 2026 Naman Harshwal. All rights reserved.
@@ -20,6 +21,7 @@ import sys
 import os
 import time
 import threading
+from typing import Optional
 import numpy as np
 
 import rclpy
@@ -29,10 +31,10 @@ from std_msgs.msg import Bool
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QFrame, QSizePolicy
+    QLabel, QSizePolicy
 )
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QColor, QFont
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PyQt5.QtCore import Qt, pyqtSignal, QObject
 
 
 class CameraSignalBridge(QObject):
@@ -63,11 +65,9 @@ class CameraViewerNode(Node):
 
     def image_callback(self, msg: Image):
         try:
-            # Handle standard BGR8 or RGB8 encodings directly via numpy
             if msg.encoding in ('bgr8', 'rgb8'):
                 arr = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
                 if msg.encoding == 'bgr8':
-                    # Convert BGR to RGB for Qt display
                     rgb_arr = arr[:, :, ::-1].copy()
                 else:
                     rgb_arr = arr.copy()
@@ -84,13 +84,55 @@ class CameraViewerNode(Node):
         self.bridge.sonar_alert.emit(self.sonar_critical, self.sonar_front_dist)
 
 
+class VideoWidget(QWidget):
+    """Custom video widget that draws frames without expanding or resizing its parent."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(240, 180)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.pixmap: Optional[QPixmap] = None
+
+    def set_pixmap(self, pixmap: QPixmap):
+        self.pixmap = pixmap
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor(2, 6, 23))
+
+        if self.pixmap and not self.pixmap.isNull():
+            # Scale frame to fit within widget while maintaining aspect ratio
+            scaled = self.pixmap.scaled(
+                self.size(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            # Center inside widget
+            x = (self.width() - scaled.width()) // 2
+            y = (self.height() - scaled.height()) // 2
+            painter.drawPixmap(x, y, scaled)
+        else:
+            painter.setPen(QColor(148, 163, 184))
+            painter.setFont(QFont("Monospace", 10))
+            painter.drawText(self.rect(), Qt.AlignCenter, "Waiting for /camera/image_raw stream...")
+
+
 class CameraViewerWindow(QMainWindow):
     def __init__(self, bridge: CameraSignalBridge):
         super().__init__()
         self.bridge = bridge
 
         self.setWindowTitle("Nammy Robot - Live Vision Feed (Logitech C270)")
-        self.setGeometry(630, 40, 620, 520)
+        
+        # Enable full standard window capabilities (Minimize, Maximize, Close, Resize)
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.WindowMinMaxButtonsHint |
+            Qt.WindowCloseButtonHint
+        )
+        self.setGeometry(660, 40, 580, 440)
+        self.setMinimumSize(320, 260)
+
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #0f172a;
@@ -105,13 +147,13 @@ class CameraViewerWindow(QMainWindow):
         central = QWidget(self)
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(4)
 
         # Header bar
         header_layout = QHBoxLayout()
         self.title_label = QLabel("● LIVE VISION STREAM")
-        self.title_label.setFont(QFont("DejaVu Sans", 11, QFont.Bold))
+        self.title_label.setFont(QFont("DejaVu Sans", 10, QFont.Bold))
         self.title_label.setStyleSheet("color: #00ff88;")
 
         self.fps_label = QLabel("FPS: -- | 640x480")
@@ -123,17 +165,9 @@ class CameraViewerWindow(QMainWindow):
         header_layout.addWidget(self.fps_label)
         layout.addLayout(header_layout)
 
-        # Video frame display label
-        self.video_label = QLabel(self)
-        self.video_label.setAlignment(Qt.AlignCenter)
-        self.video_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.video_label.setStyleSheet("""
-            background-color: #020617;
-            border: 2px solid #1e293b;
-            border-radius: 8px;
-        """)
-        self.video_label.setText("Waiting for /camera/image_raw stream...")
-        layout.addWidget(self.video_label)
+        # Video frame display widget
+        self.video_widget = VideoWidget(self)
+        layout.addWidget(self.video_widget)
 
         # Bottom Teleop HUD Status Bar
         footer_layout = QHBoxLayout()
@@ -181,11 +215,8 @@ class CameraViewerWindow(QMainWindow):
         # 2. Driving Corridor Trajectory Lines (guidance for narrow doorways / obstacles)
         corridor_pen = QPen(QColor(56, 189, 248, 140), 2, Qt.DashLine)
         painter.setPen(corridor_pen)
-        # Left guidance rail
         painter.drawLine(int(w * 0.25), h, int(w * 0.40), int(h * 0.60))
-        # Right guidance rail
         painter.drawLine(int(w * 0.75), h, int(w * 0.60), int(h * 0.60))
-        # Ground distance hash lines
         painter.drawLine(int(w * 0.30), int(h * 0.85), int(w * 0.70), int(h * 0.85))
         painter.drawLine(int(w * 0.35), int(h * 0.70), int(w * 0.65), int(h * 0.70))
 
@@ -196,13 +227,8 @@ class CameraViewerWindow(QMainWindow):
 
         painter.end()
 
-        # Scale to label size keeping aspect ratio
-        scaled = pixmap.scaled(
-            self.video_label.size(),
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation
-        )
-        self.video_label.setPixmap(scaled)
+        # Update video widget
+        self.video_widget.set_pixmap(pixmap)
 
         # Calculate FPS
         self.frame_count += 1
@@ -234,7 +260,6 @@ def main():
     window = CameraViewerWindow(bridge)
     node = CameraViewerNode(bridge)
 
-    # ROS 2 executor thread
     ros_thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
     ros_thread.start()
 
