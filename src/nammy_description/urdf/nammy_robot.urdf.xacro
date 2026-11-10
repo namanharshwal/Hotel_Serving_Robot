@@ -382,7 +382,7 @@
     <origin xyz="0.250 0.0 0.035" rpy="0 0 0"/>
   </joint>
 
-  <!-- 2. Front-Left Ultrasonic Sensor (+30 deg outward sweep) -->
+  <!-- 2. Left Flank Ultrasonic Sensor -->
   <link name="left_sonar_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -421,10 +421,10 @@
   <joint name="left_sonar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="left_sonar_link"/>
-    <origin xyz="0.225 0.125 0.035" rpy="0 0 ${pi/6}"/>
+    <origin xyz="0.0 0.200 0.035" rpy="0 0 ${pi/2}"/>
   </joint>
 
-  <!-- 3. Front-Right Ultrasonic Sensor (-30 deg outward sweep) -->
+  <!-- 3. Right Flank Ultrasonic Sensor -->
   <link name="right_sonar_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -463,7 +463,7 @@
   <joint name="right_sonar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="right_sonar_link"/>
-    <origin xyz="0.225 -0.125 0.035" rpy="0 0 ${-pi/6}"/>
+    <origin xyz="0.0 -0.200 0.035" rpy="0 0 ${-pi/2}"/>
   </joint>
 
   <!-- 4. Rear Bumper Ultrasonic Sensor -->

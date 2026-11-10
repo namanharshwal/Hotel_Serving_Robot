@@ -10,26 +10,21 @@ Panels:
         - /TF1
         - /LaserScan1
         - /Map1
-        - /Global_Costmap1
-        - /Local_Costmap1
       Splitter Ratio: 0.5
-    Tree Height: 549
+    Tree Height: 191
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
     Expanded:
       - /2D Goal Pose1
-      - /2D Pose Estimate1
       - /Publish Point1
     Name: Tool Properties
-    Splitter Ratio: 0.588
+    Splitter Ratio: 0.5879999995231628
   - Class: rviz_common/Views
     Expanded:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
-  - Class: nav2_rviz_plugins/Navigation 2
-    Name: Navigation 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -39,7 +34,7 @@ Visualization Manager:
       Color: 160; 160; 164
       Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.029999999329447746
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -69,6 +64,92 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        back_castor:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        back_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        camera_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        camera_optical_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        front_castor:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        front_sonar_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        front_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        imu_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        laser_frame:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_sonar_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        rear_sonar_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_sonar_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        touch_display_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Mass Properties:
+        Inertia: false
+        Mass: false
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
@@ -79,18 +160,62 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-      Marker Scale: 0.5
+        back_castor:
+          Value: true
+        back_wheel:
+          Value: true
+        base_footprint:
+          Value: true
+        base_link:
+          Value: true
+        camera_link:
+          Value: true
+        camera_optical_frame:
+          Value: true
+        front_castor:
+          Value: true
+        front_sonar_link:
+          Value: true
+        front_wheel:
+          Value: true
+        imu_link:
+          Value: true
+        laser_frame:
+          Value: true
+        left_sonar_link:
+          Value: true
+        left_wheel:
+          Value: true
+        map:
+          Value: true
+        odom:
+          Value: true
+        rear_sonar_link:
+          Value: true
+        right_sonar_link:
+          Value: true
+        right_wheel:
+          Value: true
+        touch_display_link:
+          Value: true
+      Marker Scale: 0.30000001192092896
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: false
+      Show Names: true
       Tree:
         map:
           odom:
             base_footprint:
               base_link:
+                back_castor:
+                  back_wheel:
+                    {}
                 camera_link:
                   camera_optical_frame:
+                    {}
+                front_castor:
+                  front_wheel:
                     {}
                 front_sonar_link:
                   {}
@@ -108,42 +233,87 @@ Visualization Manager:
                   {}
                 right_wheel:
                   {}
+                touch_display_link:
+                  {}
       Update Interval: 0
+      Value: true
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 0
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: false
+      Enabled: true
+      Keep: 100
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 0.20000000298023224
+        Axes Radius: 0.014999999664723873
+        Color: 0; 255; 100
+        Head Length: 0.07999999821186066
+        Head Radius: 0.03999999910593033
+        Shaft Length: 0.15000000596046448
+        Shaft Radius: 0.014999999664723873
+        Value: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /odom
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz_default_plugins/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color: 255; 0; 0
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
-      Max Color: 255; 0; 0
-      Max Intensity: 255
-      Min Color: 0; 0; 255
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
       Min Intensity: 0
       Name: LaserScan
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.03
+      Size (m): 0.05000000074505806
       Style: Flat Squares
       Topic:
-        Depth: 20
+        Depth: 5
         Durability Policy: Volatile
-        Filter size: 50
+        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /scan
       Use Fixed Frame: true
-      Use rainbow: true
+      Use rainbow: false
       Value: true
-    - Alpha: 0.7
+    - Alpha: 0.699999988079071
       Class: rviz_default_plugins/Map
       Color Scheme: map
-      Draw Behind: false
+      Draw Behind: true
       Enabled: true
       Name: Map
       Topic:
@@ -155,202 +325,15 @@ Visualization Manager:
         Value: /map
       Update Topic:
         Depth: 5
-        Durability Policy: Volatile
+        Durability Policy: Transient Local
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /map_updates
       Use Timestamp: false
       Value: true
-    - Alpha: 0.35
-      Class: rviz_default_plugins/Map
-      Color Scheme: costmap
-      Draw Behind: true
-      Enabled: false
-      Name: Global_Costmap
-      Topic:
-        Depth: 5
-        Durability Policy: Transient Local
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /global_costmap/costmap
-      Update Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: ""
-      Use Timestamp: false
-      Value: false
-    - Alpha: 0.50
-      Class: rviz_default_plugins/Map
-      Color Scheme: costmap
-      Draw Behind: true
-      Enabled: true
-      Name: Local_Costmap
-      Topic:
-        Depth: 5
-        Durability Policy: Transient Local
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /local_costmap/costmap
-      Update Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: ""
-      Use Timestamp: false
-      Value: true
-    - Alpha: 1
-      Class: rviz_default_plugins/Polygon
-      Color: 25; 255; 0
-      Enabled: true
-      Name: Global_Footprint
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /global_costmap/published_footprint
-      Value: true
-    - Alpha: 1
-      Class: rviz_default_plugins/Polygon
-      Color: 0; 255; 255
-      Enabled: true
-      Name: Local_Footprint
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /local_costmap/published_footprint
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 0; 255; 0
-      Enabled: true
-      Head Diameter: 0.3
-      Head Length: 0.2
-      Length: 0.3
-      Line Style: Lines
-      Line Width: 0.04
-      Name: Global_Plan
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.03
-      Shaft Diameter: 0.1
-      Shaft Length: 0.1
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /plan
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 255; 0; 255
-      Enabled: true
-      Head Diameter: 0.3
-      Head Length: 0.2
-      Length: 0.3
-      Line Style: Lines
-      Line Width: 0.03
-      Name: Local_Plan
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 255; 0
-      Pose Style: None
-      Radius: 0.03
-      Shaft Diameter: 0.1
-      Shaft Length: 0.1
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /local_plan
-      Value: true
-    - Angle Tolerance: 0.1
-      Class: rviz_default_plugins/Odometry
-      Covariance:
-        Orientation:
-          Alpha: 0.5
-          Color: 255; 255; 127
-          Color Style: Unique
-          Frame: Local
-          Offset: 1
-          Scale: 1
-          Value: false
-        Position:
-          Alpha: 0.3
-          Color: 204; 51; 204
-          Scale: 1
-          Value: false
-        Value: false
-      Enabled: true
-      Keep: 1
-      Name: Filtered_Odometry
-      Position Tolerance: 0.1
-      Shape:
-        Alpha: 1
-        Axes Length: 0.3
-        Axes Radius: 0.02
-        Color: 0; 255; 0
-        Head Length: 0.1
-        Head Radius: 0.05
-        Shaft Length: 0.2
-        Shaft Radius: 0.02
-        Value: Arrow
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /odometry/filtered
-      Value: true
-    - Alpha: 0.8
-      Class: rviz_default_plugins/PoseWithCovariance
-      Color: 255; 255; 0
-      Covariance:
-        Alpha: 0.3
-        Color: 255; 255; 0
-        Color Style: Unique
-        Scale: 1
-        Value: true
-      Enabled: true
-      Head Length: 0.3
-      Head Radius: 0.1
-      Name: AMCL_Pose
-      Shaft Length: 0.5
-      Shaft Radius: 0.05
-      Shape: Arrow
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /amcl_pose
-      Value: true
     - Class: rviz_default_plugins/Image
       Enabled: false
-      Max Value: 1
+      Max Value: 255
       Median window: 5
       Min Value: 0
       Name: Logitech_C270_Camera
@@ -359,18 +342,15 @@ Visualization Manager:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /camera/image_raw
-      Value: false
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: Waypoint_Markers
-      Topic:
-        Depth: 10
-        Durability Policy: Volatile
-        History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /waypoint_markers
+        Value: /camera/image_raw
+      Value: true
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 0.3
+      Name: IMU_Sensor_Axes
+      Radius: 0.015
+      Reference Frame: imu_link
       Value: true
   Enabled: true
   Global Options:
@@ -385,14 +365,18 @@ Visualization Manager:
     - Class: rviz_default_plugins/Select
     - Class: rviz_default_plugins/FocusCamera
     - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
     - Class: rviz_default_plugins/SetInitialPose
+      Covariance x: 0.25
+      Covariance y: 0.25
+      Covariance yaw: 0.06853891909122467
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /initialpose
-    - Class: nav2_rviz_plugins/GoalTool
+    - Class: rviz_default_plugins/SetGoal
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -400,6 +384,7 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /goal_pose
     - Class: rviz_default_plugins/PublishPoint
+      Single click: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -413,28 +398,41 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 4.5
+      Distance: 4.917247772216797
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.06
+        Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
         X: 0
         Y: 0
-        Z: 0.1
+        Z: 0.10000000149011612
       Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.01
-      Pitch: 0.65
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.550000011920929
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.785
+      Yaw: 0.7850000262260437
     Saved: ~
 Window Geometry:
-  Height: 850
-  Width: 1250
-  X: 100
-  Y: 100
+  Displays:
+    collapsed: false
+  Height: 736
+  Hide Left Dock: false
+  Hide Right Dock: false
+  Logitech_C270_Camera:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd00000002000000000000018f00000286fc0200000004fb000000100044006900730070006c006100790073010000003d0000014a000000c900fffffffb00000028004c006f006700690074006500630068005f0043003200370030005f00430061006d006500720061010000018d000001360000002800fffffffb0000001200530065006c0065006300740069006f006e000000015b0000005c0000005c00fffffffb0000001e0054006f006f006c002000500072006f0070006500720074006900650073000000018e0000006d0000005c00ffffff000000010000010000000286fc0200000001fb0000000a00560069006500770073010000003d00000286000000a400ffffff0000022f0000028600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1226
+  X: 54
+  Y: 27

@@ -27,14 +27,10 @@
 #define SONAR_TIMEOUT_US (SONAR_MAX_DISTANCE_CM * 58) // ~26,100 us
 
 enum SonarIndex {
-    SONAR_FRONT        = 0, // Front-Center
-    SONAR_FRONT_CENTER = 0,
-    SONAR_LEFT         = 1, // Front-Left (+30 deg)
-    SONAR_FRONT_LEFT   = 1,
-    SONAR_RIGHT        = 2, // Front-Right (-30 deg)
-    SONAR_FRONT_RIGHT  = 2,
-    SONAR_REAR         = 3, // Backside / Rear (180 deg)
-    SONAR_BACKSIDE     = 3
+    SONAR_FRONT = 0,
+    SONAR_LEFT  = 1,
+    SONAR_RIGHT = 2,
+    SONAR_REAR  = 3
 };
 
 struct SonarPins {

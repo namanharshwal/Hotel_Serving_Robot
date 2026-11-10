@@ -15,7 +15,6 @@ install(
 install(
   PROGRAMS
     scripts/save_map.py
-    scripts/waypoint_collector.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
