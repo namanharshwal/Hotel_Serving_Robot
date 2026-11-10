@@ -4,15 +4,17 @@
 Nammy Robot - Autonomous SLAM Mapping Launch File (nammy_mapping)
 =============================================================================
 Description:
-  Unified Autonomous SLAM Mapping package for Nammy Robot Platform.
-  Matches the exact architectural model of Autonomous Navigation and Manual Mapping:
+  Unified Autonomous SLAM Mapping & Frontier Exploration for Nammy Robot.
+  Coordinates and orchestrates:
     - Base robot hardware bringup (ESP32-S3, SmartElex motors, BNO055 IMU, 4x US-100 Sonars, YDLIDAR G2)
     - Heading hold disabled during mapping so Nav2 local controller has full rotational authority
     - Robot localization EKF sensor fusion (wheel odometry + IMU)
     - SLAM Toolbox (online asynchronous graph-based mapping) providing dynamic /map & map->odom TF
     - Full Nav2 Navigation Stack (DWB Local Planner, Navfn Planner, Costmaps, BT Navigator)
-    - RViz2 Navigation Visualization with full Nav2 panel, Goal Tool, Costmaps, Footprints, Plans, RobotModel
-    - Interactive RViz Waypoint Collector for autonomous exploration and delivery
+    - RViz2 Navigation Visualization with full Nav2 panel, Goal Tool, Costmaps, Footprints, Plans, RobotModel,
+      and 3D Frontier Exploration Markers
+    - Fully Autonomous Frontier Explorer (Yamauchi algorithm with connected-component clustering, obstacle clearance,
+      and automatic return-to-dock upon exploration completion)
     - Interactive Keyboard Teleoperation in an xterm window for manual drive override
 
 Maintainer: Naman Harshwal <namanharshwal@gmail.com>
@@ -78,10 +80,15 @@ def generate_launch_description():
         default_value='true',
         description='Automatically activate Nav2 lifecycle nodes'
     )
+    autonomous_explore_arg = DeclareLaunchArgument(
+        'autonomous_explore',
+        default_value='true',
+        description='Launch autonomous frontier exploration node to automatically map the environment'
+    )
     interactive_waypoints_arg = DeclareLaunchArgument(
         'interactive_waypoints',
-        default_value='true',
-        description='Launch interactive xterm terminal for RViz Publish Point waypoint collection and exploration missions'
+        default_value='false',
+        description='Launch interactive xterm terminal for manual RViz Publish Point waypoint collection'
     )
     teleop_arg = DeclareLaunchArgument(
         'teleop',
@@ -188,9 +195,31 @@ def generate_launch_description():
         ]
     )
 
-    # 6. Interactive RViz Waypoint Collector & Autonomous Exploration (delayed 12.5s)
+    # 6. Autonomous Frontier Explorer (delayed 13.0s for Nav2 & SLAM stabilization)
+    frontier_explorer_process = TimerAction(
+        period=13.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    'xterm',
+                    '-title', 'Nammy Autonomous Frontier Explorer',
+                    '-geometry', '88x24+40+40',
+                    '-fa', 'Monospace',
+                    '-fs', '11',
+                    '-bg', '#091e3a',
+                    '-fg', '#38bdf8',
+                    '-e', 'bash', '-c',
+                    'export ROS_DOMAIN_ID=0 && source /opt/ros/humble/setup.bash && [ -f "$HOME/Documents/hover_ws/install/setup.bash" ] && source "$HOME/Documents/hover_ws/install/setup.bash"; [ -f "$HOME/Documents/nammy_ws/install/setup.bash" ] && source "$HOME/Documents/nammy_ws/install/setup.bash"; ros2 run nammy_mapping frontier_explorer.py; exec bash'
+                ],
+                condition=IfCondition(LaunchConfiguration('autonomous_explore')),
+                output='screen'
+            )
+        ]
+    )
+
+    # 7. Optional Manual RViz Waypoint Mission Controller (if autonomous_explore is disabled)
     waypoint_collector_process = TimerAction(
-        period=12.5,
+        period=13.5,
         actions=[
             ExecuteProcess(
                 cmd=[
@@ -210,9 +239,9 @@ def generate_launch_description():
         ]
     )
 
-    # 7. Interactive Keyboard Teleoperation Window for manual override (delayed 13.5s)
+    # 8. Interactive Keyboard Teleoperation Window for manual override (delayed 14.0s)
     teleop_process = TimerAction(
-        period=13.5,
+        period=14.0,
         actions=[
             ExecuteProcess(
                 cmd=[
@@ -240,6 +269,7 @@ def generate_launch_description():
         use_ekf_arg,
         launch_rviz_arg,
         autostart_arg,
+        autonomous_explore_arg,
         interactive_waypoints_arg,
         teleop_arg,
         launch_camera_arg,
@@ -248,6 +278,7 @@ def generate_launch_description():
         slam_toolbox_node,
         nav2_stack,
         rviz_node,
+        frontier_explorer_process,
         waypoint_collector_process,
         teleop_process
     ])

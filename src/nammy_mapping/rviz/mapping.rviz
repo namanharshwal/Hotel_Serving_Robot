@@ -359,6 +359,16 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /waypoint_markers
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Exploration_Frontiers
+      Topic:
+        Depth: 10
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /exploration/frontiers
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

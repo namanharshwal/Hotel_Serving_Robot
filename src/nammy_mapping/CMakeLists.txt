@@ -16,6 +16,7 @@ install(
   PROGRAMS
     scripts/save_map.py
     scripts/waypoint_collector.py
+    scripts/frontier_explorer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
