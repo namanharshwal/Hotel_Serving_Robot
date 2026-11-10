@@ -369,7 +369,16 @@ class AutonomousFrontierExplorer(Node):
             self.on_goal_failed()
 
     def on_goal_succeeded(self):
-        """Handle successful arrival at frontier."""
+        """Handle successful arrival at frontier or return home."""
+        if self.state == "RETURNING_HOME":
+            self.state = "DOCK_REACHED"
+            self.is_exploring = False
+            self.active_target = None
+            self.get_logger().info("=" * 60)
+            self.get_logger().info("MISSION SUCCESS: Robot has returned to its initial position!")
+            self.get_logger().info("=" * 60)
+            return
+
         self.goals_completed += 1
         self.last_goal_time = time.time()
         self.active_target = None
@@ -378,6 +387,12 @@ class AutonomousFrontierExplorer(Node):
 
     def on_goal_failed(self):
         """Blacklist failed frontier and select alternative."""
+        if self.state == "RETURNING_HOME":
+            self.get_logger().warn("Return to dock goal failed. Holding current position.")
+            self.state = "COMPLETED"
+            self.is_exploring = False
+            return
+
         if self.active_target:
             pos = (round(self.active_target.x, 2), round(self.active_target.y, 2))
             self.blacklisted_targets[pos] = time.time()
