@@ -214,7 +214,7 @@ local_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan
+        observation_sources: scan sonar_cloud
         scan:
           topic: /scan
           sensor_frame: laser_frame
@@ -225,6 +225,17 @@ local_costmap:
           data_type: "LaserScan"
           raytrace_max_range: 8.0
           obstacle_max_range: 7.5
+          expected_update_rate: 0.0
+        sonar_cloud:
+          topic: /sonar/obstacle_cloud
+          sensor_frame: base_link
+          max_obstacle_height: 1.0
+          min_obstacle_height: -0.1
+          clearing: True
+          marking: True
+          data_type: "PointCloud2"
+          raytrace_max_range: 3.5
+          obstacle_max_range: 3.0
           expected_update_rate: 0.0
           
       always_send_full_costmap: True

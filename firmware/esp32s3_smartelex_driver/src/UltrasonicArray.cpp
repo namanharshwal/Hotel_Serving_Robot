@@ -93,11 +93,17 @@ float UltrasonicArray::getDistanceMeters(SonarIndex index) const {
 }
 
 bool UltrasonicArray::isFrontObstacleCritical(float threshold_meters) const {
-    float d = getDistanceMeters(SONAR_FRONT);
-    return (d > 0.02f && d < threshold_meters);
+    // 3 front-mounted sensors protect full forward perimeter (Center, Front-Left, Front-Right)
+    float df = getDistanceMeters(SONAR_FRONT_CENTER);
+    float dl = getDistanceMeters(SONAR_FRONT_LEFT);
+    float dr = getDistanceMeters(SONAR_FRONT_RIGHT);
+    return ((df > 0.02f && df < threshold_meters) ||
+            (dl > 0.02f && dl < threshold_meters) ||
+            (dr > 0.02f && dr < threshold_meters));
 }
 
 bool UltrasonicArray::isRearObstacleCritical(float threshold_meters) const {
-    float d = getDistanceMeters(SONAR_REAR);
+    // Backside sensor protects reverse motion
+    float d = getDistanceMeters(SONAR_BACKSIDE);
     return (d > 0.02f && d < threshold_meters);
 }

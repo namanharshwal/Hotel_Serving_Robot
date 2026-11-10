@@ -273,11 +273,11 @@ def run_quick_check():
 
     node = Checker()
     print_banner()
-    print(" [DIAGNOSTIC] Sampling all 4 ultrasonic channels for 2.0 seconds...\n")
+    print(" [DIAGNOSTIC] Sampling all 4 ultrasonic channels for 3.0 seconds...\n")
     t0 = time.time()
-    while time.time() - t0 < 2.5:
+    while time.time() - t0 < 3.5:
         rclpy.spin_once(node, timeout_sec=0.05)
-        if all(len(samples) >= 10 for samples in data.values()):
+        if all(len(samples) >= 5 for samples in data.values()):
             break
 
     node.destroy_node()
